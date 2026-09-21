@@ -1,0 +1,84 @@
+{
+  "name": "kaikou-practice",
+  "version": "0.7.0",
+  "description": "开口表达练习室：即兴表达、逻辑训练与复述练习",
+  "author": "Kaikou Studio",
+  "main": "desktop/main.cjs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server/index.mjs --dev",
+    "build": "tsc -b && vite build",
+    "start": "node server/index.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:e2e": "playwright test",
+    "format": "prettier --write src server tests desktop/*.cjs *.json *.ts index.html README.md docs",
+    "desktop": "electron .",
+    "desktop:pack": "npm run build && node desktop/build.cjs",
+    "desktop:test": "node desktop/smoke-test.mjs"
+  },
+  "build": {
+    "appId": "studio.kaikou.practice",
+    "productName": "开口练习",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "server/**/*",
+      "desktop/main.cjs",
+      "desktop/service-settings.cjs",
+      "desktop/local-transcription.cjs",
+      "desktop/preload.cjs",
+      "desktop/icon.png",
+      "desktop/icon.ico",
+      ".env.example",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "desktop/transcribe.py",
+        "to": "transcribe.py"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "desktop/icon.ico",
+      "artifactName": "Kaikou-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "开口练习",
+      "installerLanguages": [
+        "zh_CN"
+      ],
+      "language": "2052"
+    }
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.0.0",
+    "jsonrepair": "^3.15.0",
+    "multer": "^2.0.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "electron": "^44.4.3",
+    "electron-builder": "^26.15.3",
+    "prettier": "^3.9.8",
+    "typescript": "^5.9.0",
+    "vite": "^7.1.0"
+  }
+}

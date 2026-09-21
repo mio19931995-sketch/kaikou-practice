@@ -1,0 +1,639 @@
+[
+  {
+    "name": "missing",
+    "input": {
+      "mode": "logic",
+      "topic": "如何向同事解释项目延期？",
+      "framework": "问题—原因—方案",
+      "transcript": "项目要延期了。最近事情比较多，人手也不够，所以进度慢了。大家再努力一下，应该就能解决。",
+      "duration": 22
+    },
+    "feedback": {
+      "source": "ai",
+      "provider": "jev",
+      "model": "jev-1.13.0",
+      "ruleVersion": "scenario-1",
+      "ruleProfile": "report",
+      "profileName": "工作汇报 / 问题解决",
+      "judgments": {
+        "focus": {
+          "type": "choice",
+          "choice": "clear",
+          "confidence": 0.88,
+          "probabilities": {
+            "clear": 0.92,
+            "needs_work": 0.08,
+            "insufficient": 0
+          }
+        },
+        "reason": {
+          "type": "choice",
+          "choice": "needs_work",
+          "confidence": 0.58,
+          "probabilities": {
+            "clear": 0.28,
+            "needs_work": 0.72,
+            "insufficient": 0
+          }
+        },
+        "action": {
+          "type": "choice",
+          "choice": "needs_work",
+          "confidence": 1,
+          "probabilities": {
+            "clear": 0,
+            "needs_work": 1,
+            "insufficient": 0
+          }
+        },
+        "owner": {
+          "type": "choice",
+          "choice": "needs_work",
+          "confidence": 1,
+          "probabilities": {
+            "clear": 0,
+            "needs_work": 1,
+            "insufficient": 0
+          }
+        },
+        "time": {
+          "type": "choice",
+          "choice": "needs_work",
+          "confidence": 1,
+          "probabilities": {
+            "clear": 0,
+            "needs_work": 1,
+            "insufficient": 0
+          }
+        }
+      },
+      "checks": [
+        {
+          "id": "focus",
+          "title": "直接回答题目",
+          "outcome": "clear",
+          "text": "已点明题目涉及的事件或自己的观点。例如题目问项目延期，说“项目要延期了”即满足本项；原因和方案的完整性由其他项判断",
+          "task": "用一句话直接回答题目，再补充背景。",
+          "evidence": "项目要延期了。",
+          "evidenceJudgment": {
+            "type": "choice",
+            "choice": "s1",
+            "confidence": 0.97,
+            "probabilities": {
+              "s1": 0.98,
+              "s2": 0.01,
+              "s3": 0.01,
+              "none": 0
+            }
+          }
+        },
+        {
+          "id": "reason",
+          "title": "解释具体原因",
+          "outcome": "needs_work",
+          "text": "只说情况复杂、事情多等笼统理由，没有解释具体原因怎样导致结果",
+          "task": "补充一个具体原因，并说明它怎样影响结果；不确定的原因明确说待确认。",
+          "evidence": "最近事情比较多，人手也不够，所以进度慢了。",
+          "evidenceJudgment": {
+            "type": "choice",
+            "choice": "s2",
+            "confidence": 0.94,
+            "probabilities": {
+              "s1": 0,
+              "s2": 0.95,
+              "s3": 0,
+              "none": 0.05
+            }
+          }
+        },
+        {
+          "id": "action",
+          "title": "提出可执行行动",
+          "outcome": "needs_work",
+          "text": "没有具体行动，或只有再努力、加强沟通、尽快解决等口号；提到方案不等于有方案",
+          "task": "把“再努力一下”之类的意愿换成一个可执行动作。用真实信息补全：接下来准备做……。",
+          "evidence": "",
+          "evidenceJudgment": {
+            "type": "choice",
+            "choice": "none",
+            "confidence": 0.62,
+            "probabilities": {
+              "s1": 0,
+              "s2": 0,
+              "s3": 0.28,
+              "none": 0.72
+            }
+          }
+        },
+        {
+          "id": "owner",
+          "title": "明确行动负责人",
+          "outcome": "needs_work",
+          "text": "没有负责主体，或只有未关联具体行动的大家、相关人员",
+          "task": "补充谁负责这项行动；尚未落实就说明需要与谁确认。",
+          "evidence": "",
+          "evidenceJudgment": {
+            "type": "choice",
+            "choice": "none",
+            "confidence": 0.64,
+            "probabilities": {
+              "s1": 0,
+              "s2": 0,
+              "s3": 0.27,
+              "none": 0.73
+            }
+          }
+        },
+        {
+          "id": "time",
+          "title": "交代时间安排",
+          "outcome": "needs_work",
+          "text": "未说明时间；尽快、以后、争取早点不算明确时间安排",
+          "task": "说明何时完成；不能确定完成日期时，说明何时提供下一次进度更新，不编造日期。",
+          "evidence": "",
+          "evidenceJudgment": {
+            "type": "choice",
+            "choice": "none",
+            "confidence": 0.93,
+            "probabilities": {
+              "s1": 0.04,
+              "s2": 0,
+              "s3": 0.01,
+              "none": 0.95
+            }
+          }
+        }
+      ],
+      "summary": "按“工作汇报 / 问题解决”的 5 项标准检查：1 项已体现，4 项待补充，0 项需确认。",
+      "dimensions": [
+        {
+          "title": "直接回答题目 · 已体现",
+          "text": "已点明题目涉及的事件或自己的观点。例如题目问项目延期，说“项目要延期了”即满足本项；原因和方案的完整性由其他项判断"
+        },
+        {
+          "title": "解释具体原因 · 待补充",
+          "text": "只说情况复杂、事情多等笼统理由，没有解释具体原因怎样导致结果"
+        },
+        {
+          "title": "提出可执行行动 · 待补充",
+          "text": "没有具体行动，或只有再努力、加强沟通、尽快解决等口号；提到方案不等于有方案"
+        },
+        {
+          "title": "明确行动负责人 · 待补充",
+          "text": "没有负责主体，或只有未关联具体行动的大家、相关人员"
+        },
+        {
+          "title": "交代时间安排 · 待补充",
+          "text": "未说明时间；尽快、以后、争取早点不算明确时间安排"
+        }
+      ],
+      "improvements": [
+        "把“再努力一下”之类的意愿换成一个可执行动作。用真实信息补全：接下来准备做……。"
+      ],
+      "practiceTarget": "action",
+      "rewrite": "",
+      "metrics": {
+        "characters": 37,
+        "duration": 22,
+        "fillers": 0
+      }
+    },
+    "raw": {
+      "model": "jev-1.13.0",
+      "answers": {
+        "focus": {
+          "type": "choice",
+          "choice": "clear",
+          "confidence": 0.88,
+          "probabilities": {
+            "needs_work": 0.08,
+            "clear": 0.92,
+            "insufficient": 0
+          }
+        },
+        "focus_evidence": {
+          "type": "choice",
+          "choice": "s1",
+          "confidence": 0.97,
+          "probabilities": {
+            "s1": 0.98,
+            "s2": 0.01,
+            "s3": 0.01,
+            "none": 0
+          }
+        },
+        "reason": {
+          "type": "choice",
+          "choice": "needs_work",
+          "confidence": 0.58,
+          "probabilities": {
+            "needs_work": 0.72,
+            "clear": 0.28,
+            "insufficient": 0
+          }
+        },
+        "reason_evidence": {
+          "type": "choice",
+          "choice": "s2",
+          "confidence": 0.94,
+          "probabilities": {
+            "s1": 0,
+            "s2": 0.95,
+            "s3": 0,
+            "none": 0.05
+          }
+        },
+        "action": {
+          "type": "choice",
+          "choice": "needs_work",
+          "confidence": 1,
+          "probabilities": {
+            "needs_work": 1,
+            "clear": 0,
+            "insufficient": 0
+          }
+        },
+        "action_evidence": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 0.62,
+          "probabilities": {
+            "s1": 0,
+            "s2": 0,
+            "none": 0.72,
+            "s3": 0.28
+          }
+        },
+        "owner": {
+          "type": "choice",
+          "choice": "needs_work",
+          "confidence": 1,
+          "probabilities": {
+            "needs_work": 1,
+            "clear": 0,
+            "insufficient": 0
+          }
+        },
+        "owner_evidence": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 0.64,
+          "probabilities": {
+            "s1": 0,
+            "s2": 0,
+            "none": 0.73,
+            "s3": 0.27
+          }
+        },
+        "time": {
+          "type": "choice",
+          "choice": "needs_work",
+          "confidence": 1,
+          "probabilities": {
+            "needs_work": 1,
+            "clear": 0,
+            "insufficient": 0
+          }
+        },
+        "time_evidence": {
+          "type": "choice",
+          "choice": "none",
+          "confidence": 0.93,
+          "probabilities": {
+            "s1": 0.04,
+            "s2": 0,
+            "none": 0.95,
+            "s3": 0.01
+          }
+        }
+      },
+      "usage": {
+        "input_tokens": 3537,
+        "output_tokens": 444
+      }
+    }
+  },
+  {
+    "name": "improved",
+    "input": {
+      "mode": "logic",
+      "topic": "如何向同事解释项目延期？",
+      "framework": "问题—原因—方案",
+      "transcript": "项目交付需要延期。两位负责接口开发的同事临时调去处理线上故障，接口联调因此落后了两天。我负责今天重新排定接口任务，开发组明天先完成登录接口。新的交付日期还需要确认，我会在明天下午三点同步确认后的排期。",
+      "duration": 22
+    },
+    "feedback": {
+      "source": "ai",
+      "provider": "jev",
+      "model": "jev-1.13.0",
+      "ruleVersion": "scenario-1",
+      "ruleProfile": "report",
+      "profileName": "工作汇报 / 问题解决",
+      "judgments": {
+        "focus": {
+          "type": "choice",
+          "choice": "clear",
+          "confidence": 0.98,
+          "probabilities": {
+            "clear": 0.99,
+            "needs_work": 0.01,
+            "insufficient": 0
+          }
+        },
+        "reason": {
+          "type": "choice",
+          "choice": "clear",
+          "confidence": 0.99,
+          "probabilities": {
+            "clear": 1,
+            "needs_work": 0,
+            "insufficient": 0
+          }
+        },
+        "action": {
+          "type": "choice",
+          "choice": "clear",
+          "confidence": 0.98,
+          "probabilities": {
+            "clear": 0.99,
+            "needs_work": 0.01,
+            "insufficient": 0
+          }
+        },
+        "owner": {
+          "type": "choice",
+          "choice": "clear",
+          "confidence": 0.98,
+          "probabilities": {
+            "clear": 0.99,
+            "needs_work": 0.01,
+            "insufficient": 0
+          }
+        },
+        "time": {
+          "type": "choice",
+          "choice": "clear",
+          "confidence": 0.99,
+          "probabilities": {
+            "clear": 1,
+            "needs_work": 0,
+            "insufficient": 0
+          }
+        }
+      },
+      "checks": [
+        {
+          "id": "focus",
+          "title": "直接回答题目",
+          "outcome": "clear",
+          "text": "已点明题目涉及的事件或自己的观点。例如题目问项目延期，说“项目要延期了”即满足本项；原因和方案的完整性由其他项判断",
+          "task": "用一句话直接回答题目，再补充背景。",
+          "evidence": "项目交付需要延期。",
+          "evidenceJudgment": {
+            "type": "choice",
+            "choice": "s1",
+            "confidence": 0.99,
+            "probabilities": {
+              "s1": 1,
+              "s2": 0,
+              "s3": 0,
+              "s4": 0,
+              "none": 0
+            }
+          }
+        },
+        {
+          "id": "reason",
+          "title": "解释具体原因",
+          "outcome": "clear",
+          "text": "给出具体原因，并解释它与结果的联系",
+          "task": "补充一个具体原因，并说明它怎样影响结果；不确定的原因明确说待确认。",
+          "evidence": "两位负责接口开发的同事临时调去处理线上故障，接口联调因此落后了两天。",
+          "evidenceJudgment": {
+            "type": "choice",
+            "choice": "s2",
+            "confidence": 1,
+            "probabilities": {
+              "s1": 0,
+              "s2": 1,
+              "s3": 0,
+              "s4": 0,
+              "none": 0
+            }
+          }
+        },
+        {
+          "id": "action",
+          "title": "提出可执行行动",
+          "outcome": "clear",
+          "text": "明确说出要做的具体事情，例如重新安排某项任务或协调某项资源。行动可被执行和检查",
+          "task": "把“再努力一下”之类的意愿换成一个可执行动作。用真实信息补全：接下来准备做……。",
+          "evidence": "我负责今天重新排定接口任务，开发组明天先完成登录接口。",
+          "evidenceJudgment": {
+            "type": "choice",
+            "choice": "s3",
+            "confidence": 1,
+            "probabilities": {
+              "s1": 0,
+              "s2": 0,
+              "s3": 1,
+              "s4": 0,
+              "none": 0
+            }
+          }
+        },
+        {
+          "id": "owner",
+          "title": "明确行动负责人",
+          "outcome": "clear",
+          "text": "明确说明哪个人、岗位或团队承担具体行动；与具体行动关联的我或我们也可以",
+          "task": "补充谁负责这项行动；尚未落实就说明需要与谁确认。",
+          "evidence": "我负责今天重新排定接口任务，开发组明天先完成登录接口。",
+          "evidenceJudgment": {
+            "type": "choice",
+            "choice": "s3",
+            "confidence": 0.99,
+            "probabilities": {
+              "s1": 0,
+              "s2": 0,
+              "s3": 0.99,
+              "s4": 0.01,
+              "none": 0
+            }
+          }
+        },
+        {
+          "id": "time",
+          "title": "交代时间安排",
+          "outcome": "clear",
+          "text": "给出行动或交付的时间，或明确说明何时反馈尚未确定的时间",
+          "task": "说明何时完成；不能确定完成日期时，说明何时提供下一次进度更新，不编造日期。",
+          "evidence": "新的交付日期还需要确认，我会在明天下午三点同步确认后的排期。",
+          "evidenceJudgment": {
+            "type": "choice",
+            "choice": "s4",
+            "confidence": 0.74,
+            "probabilities": {
+              "s1": 0,
+              "s2": 0,
+              "s3": 0.2,
+              "s4": 0.8,
+              "none": 0
+            }
+          }
+        }
+      ],
+      "summary": "按“工作汇报 / 问题解决”的 5 项标准检查：5 项已体现，0 项待补充，0 项需确认。",
+      "dimensions": [
+        {
+          "title": "直接回答题目 · 已体现",
+          "text": "已点明题目涉及的事件或自己的观点。例如题目问项目延期，说“项目要延期了”即满足本项；原因和方案的完整性由其他项判断"
+        },
+        {
+          "title": "解释具体原因 · 已体现",
+          "text": "给出具体原因，并解释它与结果的联系"
+        },
+        {
+          "title": "提出可执行行动 · 已体现",
+          "text": "明确说出要做的具体事情，例如重新安排某项任务或协调某项资源。行动可被执行和检查"
+        },
+        {
+          "title": "明确行动负责人 · 已体现",
+          "text": "明确说明哪个人、岗位或团队承担具体行动；与具体行动关联的我或我们也可以"
+        },
+        {
+          "title": "交代时间安排 · 已体现",
+          "text": "给出行动或交付的时间，或明确说明何时反馈尚未确定的时间"
+        }
+      ],
+      "improvements": [
+        "本轮检查项已体现。可以换一道同场景题目，验证是否能独立运用。"
+      ],
+      "rewrite": "",
+      "metrics": {
+        "characters": 93,
+        "duration": 22,
+        "fillers": 0
+      }
+    },
+    "raw": {
+      "model": "jev-1.13.0",
+      "answers": {
+        "focus": {
+          "type": "choice",
+          "choice": "clear",
+          "confidence": 0.98,
+          "probabilities": {
+            "clear": 0.99,
+            "insufficient": 0,
+            "needs_work": 0.01
+          }
+        },
+        "focus_evidence": {
+          "type": "choice",
+          "choice": "s1",
+          "confidence": 0.99,
+          "probabilities": {
+            "s2": 0,
+            "none": 0,
+            "s3": 0,
+            "s1": 1,
+            "s4": 0
+          }
+        },
+        "reason": {
+          "type": "choice",
+          "choice": "clear",
+          "confidence": 0.99,
+          "probabilities": {
+            "clear": 1,
+            "insufficient": 0,
+            "needs_work": 0
+          }
+        },
+        "reason_evidence": {
+          "type": "choice",
+          "choice": "s2",
+          "confidence": 1,
+          "probabilities": {
+            "s2": 1,
+            "none": 0,
+            "s3": 0,
+            "s1": 0,
+            "s4": 0
+          }
+        },
+        "action": {
+          "type": "choice",
+          "choice": "clear",
+          "confidence": 0.98,
+          "probabilities": {
+            "clear": 0.99,
+            "insufficient": 0,
+            "needs_work": 0.01
+          }
+        },
+        "action_evidence": {
+          "type": "choice",
+          "choice": "s3",
+          "confidence": 1,
+          "probabilities": {
+            "s2": 0,
+            "none": 0,
+            "s3": 1,
+            "s4": 0,
+            "s1": 0
+          }
+        },
+        "owner": {
+          "type": "choice",
+          "choice": "clear",
+          "confidence": 0.98,
+          "probabilities": {
+            "clear": 0.99,
+            "insufficient": 0,
+            "needs_work": 0.01
+          }
+        },
+        "owner_evidence": {
+          "type": "choice",
+          "choice": "s3",
+          "confidence": 0.99,
+          "probabilities": {
+            "s2": 0,
+            "none": 0,
+            "s3": 0.99,
+            "s1": 0,
+            "s4": 0.01
+          }
+        },
+        "time": {
+          "type": "choice",
+          "choice": "clear",
+          "confidence": 0.99,
+          "probabilities": {
+            "clear": 1,
+            "insufficient": 0,
+            "needs_work": 0
+          }
+        },
+        "time_evidence": {
+          "type": "choice",
+          "choice": "s4",
+          "confidence": 0.74,
+          "probabilities": {
+            "s2": 0,
+            "none": 0,
+            "s3": 0.2,
+            "s1": 0,
+            "s4": 0.8
+          }
+        }
+      },
+      "usage": {
+        "input_tokens": 4004,
+        "output_tokens": 483
+      }
+    }
+  }
+]

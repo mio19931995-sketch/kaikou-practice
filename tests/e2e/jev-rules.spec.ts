@@ -1,0 +1,25 @@
+import {test,expect} from '@playwright/test';
+import fs from 'node:fs';
+const fixtures=JSON.parse(fs.readFileSync('tests/fixtures/jev-rules.json','utf8'));
+test('scenario checks, exact quotations, targeted revision and persisted comparison',async({page})=>{
+ await page.route('**/api/status',r=>r.fulfill({json:{ai:true,asr:false}}));
+ let calls=0;
+ await page.route('**/api/analyze',r=>{expect(r.request().postDataJSON().ruleProfile).toBe('report');return r.fulfill({json:fixtures[calls++].feedback});});
+ await page.goto('/#/practice/improv');
+ await page.getByRole('button',{name:'也可以用文字练习'}).click();
+ await page.getByLabel('我的表达',{exact:true}).fill(fixtures[0].input.transcript);
+ await page.getByRole('button',{name:'仅保存练习'}).click();
+ await page.locator('.history-card').click();
+ await page.getByLabel('点评场景').selectOption('report');
+ await page.getByRole('button',{name:'生成 AI 点评',exact:true}).click();
+ await expect(page.getByLabel('Jev 场景检查')).toBeVisible();
+ await expect(page.locator('.jev-detail')).toContainText('可执行动作');
+ await page.getByRole('button',{name:/解释具体原因/}).click();
+ await expect(page.locator('.jev-detail blockquote')).toHaveText('最近事情比较多，人手也不够，所以进度慢了。');
+ await page.locator('#saved-transcript').fill(fixtures[1].input.transcript);
+ await page.getByRole('button',{name:'重新生成 AI 点评',exact:true}).click();
+ await expect(page.getByLabel('修改前后对比')).toContainText('待补充 → 已体现');
+ await page.reload();await expect(page.getByLabel('修改前后对比')).toBeVisible();
+ await expect(page.getByLabel('点评场景')).toHaveValue('report');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});

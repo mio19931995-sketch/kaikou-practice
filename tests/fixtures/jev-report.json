@@ -1,0 +1,82 @@
+{
+  "input": {
+    "mode": "logic",
+    "topic": "如何向同事解释项目延期？",
+    "framework": "问题—原因—方案",
+    "transcript": "项目要延期了。最近事情比较多，人手也不够，所以进度慢了。大家再努力一下，应该就能解决。",
+    "duration": 22
+  },
+  "feedback": {
+    "source": "ai",
+    "provider": "jev",
+    "model": "jev-1.13.0",
+    "judgments": {
+      "focus": {
+        "type": "choice",
+        "choice": "clear",
+        "confidence": 0.84,
+        "probabilities": {
+          "clear": 0.89,
+          "needs_work": 0.09,
+          "insufficient": 0.02
+        }
+      },
+      "structure": {
+        "type": "choice",
+        "choice": "clear",
+        "confidence": 0.62,
+        "probabilities": {
+          "clear": 0.74,
+          "needs_work": 0.25,
+          "insufficient": 0.01
+        }
+      },
+      "support": {
+        "type": "choice",
+        "choice": "clear",
+        "confidence": 0.69,
+        "probabilities": {
+          "clear": 0.79,
+          "needs_work": 0.19,
+          "insufficient": 0.02
+        }
+      },
+      "clarity": {
+        "type": "choice",
+        "choice": "clear",
+        "confidence": 0.95,
+        "probabilities": {
+          "clear": 0.97,
+          "needs_work": 0.03,
+          "insufficient": 0
+        }
+      }
+    },
+    "summary": "Jev 已完成四项结构化判断。下方结论由模型选择，说明与练习建议来自应用内的固定标准，并非模型生成的逐句点评。",
+    "dimensions": [
+      {
+        "title": "切题程度 · 较清楚",
+        "text": "直接回答题目，中心观点明确"
+      },
+      {
+        "title": "表达结构 · 较清楚",
+        "text": "内容顺序连贯；如指定表达框架，包含其关键步骤"
+      },
+      {
+        "title": "内容支撑 · 较清楚",
+        "text": "一般表达有具体理由或例子；复述则忠实于原文且保留主要信息"
+      },
+      {
+        "title": "文字清晰度 · 较清楚",
+        "text": "文字含义清楚，没有妨碍理解的重复或跳跃"
+      }
+    ],
+    "improvements": [],
+    "rewrite": "",
+    "metrics": {
+      "characters": 37,
+      "duration": 22,
+      "fillers": 0
+    }
+  }
+}
