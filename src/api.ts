@@ -19,22 +19,38 @@ export async function getStatus(): Promise<ServiceStatus> {
   }
 }
 export async function analyze(session: Session): Promise<Feedback> {
-  return jsonResponse(
-    await fetch("/api/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        transcript: session.transcript,
-        mode: session.mode,
-        topic: session.topic,
-        duration: session.duration,
-        framework: session.framework,
-        material: session.material,
-        ruleProfile: session.ruleProfile,
+  try {
+    return await jsonResponse(
+      await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transcript: session.transcript,
+          mode: session.mode,
+          topic: session.topic,
+          duration: session.duration,
+          framework: session.framework,
+          material: session.material,
+          ruleProfile: session.ruleProfile,
+          thinkingModelId: session.thinkingModelId,
+        }),
+        signal: AbortSignal.timeout(100000),
       }),
-      signal: AbortSignal.timeout(100000),
-    }),
-  );
+    );
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.name === "TimeoutError" || error.name === "AbortError")
+    )
+      throw new Error(
+        "等待 AI 结果超时。内容已保留，请稍后重试；无需重新录音。",
+      );
+    if (error instanceof TypeError)
+      throw new Error(
+        "未能连接点评服务。请检查网络或重新打开应用，再重试；无需重新录音。",
+      );
+    throw error;
+  }
 }
 export async function transcribe(blob: Blob): Promise<string> {
   const body = new FormData();

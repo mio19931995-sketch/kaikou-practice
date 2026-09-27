@@ -68,7 +68,7 @@ async function toWav(blob: Blob, context: AudioContext): Promise<Blob> {
   return new Blob([buffer], { type: "audio/wav" });
 }
 
-export function useRecorder() {
+export function useRecorder(maxSeconds = 60) {
   const [phase, setPhase] = useState<
     "idle" | "requesting" | "ready" | "recording" | "processing" | "done"
   >("idle");
@@ -160,6 +160,7 @@ export function useRecorder() {
   }
   function start(browserSpeech: boolean) {
     if (!stream.current || !context.current) return;
+    const limit = [30, 60, 90, 180].includes(maxSeconds) ? maxSeconds : 60;
     const preferred = [
       "audio/webm;codecs=opus",
       "audio/mp4",
@@ -188,7 +189,7 @@ export function useRecorder() {
         setPhase("processing");
         setSeconds(
           Math.min(
-            60,
+            limit,
             Math.max(1, Math.round((Date.now() - started.current) / 1000)),
           ),
         );
@@ -218,8 +219,8 @@ export function useRecorder() {
       setPhase("recording");
       timer.current = setInterval(() => {
         const elapsed = Math.floor((Date.now() - started.current) / 1000);
-        setSeconds(Math.min(60, elapsed));
-        if (elapsed >= 60) stop();
+        setSeconds(Math.min(limit, elapsed));
+        if (elapsed >= limit) stop();
       }, 250);
       const Speech =
         (window as SpeechWindow).SpeechRecognition ||

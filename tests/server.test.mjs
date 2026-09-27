@@ -275,3 +275,18 @@ test("Incomplete Jev answers fail explicitly without basic fallback", async () =
     const res = await post(base, sample); assert.equal(res.status, 502); assert.equal((await res.json()).source, undefined);
   });
 });
+
+test("AI recovery distinguishes transport failure, timeout and invalid output without exposing upstream text", async () => {
+  for (const [fetcher, expected] of [
+    [async () => { throw new TypeError("secret endpoint detail"); }, /未能连接 AI 服务/],
+    [async () => { throw new DOMException("secret detail", "TimeoutError"); }, /超时/],
+    [async () => Response.json({ choices: [{ message: { content: "secret malformed output" } }] }), /完整性或原文校验/],
+  ]) {
+    await serve({ env: { AI_API_KEY: "private-key", AI_BASE_URL: "https://example.com/v1", AI_MODEL: "test" }, fetcher }, async base => {
+      const res = await post(base, sample); const body = await res.json();
+      assert.equal(res.status, 502); assert.match(body.error, expected);
+      assert.doesNotMatch(JSON.stringify(body), /secret|private-key/);
+      assert.equal(body.source, undefined);
+    });
+  }
+});

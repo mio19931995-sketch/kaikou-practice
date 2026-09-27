@@ -1,3 +1,4 @@
+import { PracticeNext, AnalysisProgress } from "./PracticeLoop";
 import { RuleSelector } from "./RuleSelector";
 import { AttemptComparison } from "./ScenarioReport";
 import type { RuleProfile } from "./types";
@@ -18,13 +19,17 @@ export function SavedPractice({
   refresh: () => Promise<void>;
   onBusy: (value: boolean) => void;
 }) {
-  const [ruleProfile, setRuleProfile] = useState<RuleProfile>(session.ruleProfile || "auto");
+  const [ruleProfile, setRuleProfile] = useState<RuleProfile>(
+    session.ruleProfile || "auto",
+  );
   const [text, setText] = useState(session.transcript);
   const [working, setWorking] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const active = useRef(true);
-  const dirty = text !== session.transcript || ruleProfile !== (session.ruleProfile || "auto");
+  const dirty =
+    text !== session.transcript ||
+    ruleProfile !== (session.ruleProfile || "auto");
   useEffect(() => {
     active.current = true;
     return () => {
@@ -80,7 +85,10 @@ export function SavedPractice({
         await saveSession({
           ...session,
           transcript: result,
-          previousAttempt: session.feedback?.checks ? { transcript: session.transcript, feedback: session.feedback } : session.previousAttempt,
+          previousAttempt:
+            session.feedback?.source === "ai"
+              ? { transcript: session.transcript, feedback: session.feedback }
+              : session.previousAttempt,
           feedback: undefined,
         });
         await refresh();
@@ -90,9 +98,16 @@ export function SavedPractice({
           ...session,
           transcript: text,
           ruleProfile,
-          previousAttempt: text !== session.transcript && session.feedback?.checks ? { transcript: session.transcript, feedback: session.feedback } : session.previousAttempt,
+          previousAttempt:
+            text !== session.transcript && session.feedback?.source === "ai"
+              ? { transcript: session.transcript, feedback: session.feedback }
+              : session.previousAttempt,
           feedback: dirty ? undefined : session.feedback,
         };
+        if (action === "analyze") {
+          await saveSession(updated);
+          await refresh();
+        }
         const report =
           action === "analyze" ? await analyze(updated) : updated.feedback;
         if (!active.current) return;
@@ -121,7 +136,11 @@ export function SavedPractice({
         <p>
           可以直接点评，也可以先修正识别错误。修改文字后重新生成点评，结果会更新在这条记录中。
         </p>
-        <RuleSelector value={ruleProfile} onChange={setRuleProfile} disabled={Boolean(working) || session.mode === "retell"} />
+        <RuleSelector
+          value={ruleProfile}
+          onChange={setRuleProfile}
+          disabled={Boolean(working) || session.mode === "retell"}
+        />
         <div className="saved-record-actions">
           {session.audio && (
             <button
@@ -138,9 +157,11 @@ export function SavedPractice({
             onClick={() => void run("analyze")}
           >
             {status.ai
-              ? session.feedback?.source === "ai"
-                ? "重新生成 AI 点评"
-                : "生成 AI 点评"
+              ? error
+                ? "重试 AI 点评"
+                : session.feedback?.source === "ai"
+                  ? "重新生成 AI 点评"
+                  : "生成 AI 点评"
               : "查看基础反馈"}
           </button>
           <button
@@ -154,7 +175,7 @@ export function SavedPractice({
         {session.audio && !status.asr && (
           <p>语音识别尚未就绪，可以先填写文字，或在设置中检查语音服务。</p>
         )}
-        {working && <p role="status">{working}</p>}
+        {working && <AnalysisProgress message={working} />}
         {notice && <p role="status">{notice}</p>}
         {error && <ErrorNote>{error}</ErrorNote>}
         <textarea
@@ -177,6 +198,10 @@ export function SavedPractice({
               下方是修改前的点评。生成新点评后会更新。
             </p>
           )}
+          <PracticeNext
+            session={session}
+            disabled={dirty || Boolean(working)}
+          />
           <AttemptComparison session={session} />
           <Report feedback={session.feedback} />
         </>

@@ -549,7 +549,7 @@ select option {
   width: 100%;
   max-width: 480px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   padding: 9px 16px calc(9px + env(safe-area-inset-bottom));
   background: #fafbf6f5;
   border-top: 1px solid #e4e8de;

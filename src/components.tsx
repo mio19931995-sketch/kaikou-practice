@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { RefObject, ReactNode } from "react";
 import {
   ArrowLeft,
+  BookOpen,
   House,
   Path,
   ClockCounterClockwise,
@@ -64,11 +65,16 @@ export function BottomNav({ active }: { active: string }) {
       {[
         { path: "/", label: "首页", icon: House },
         { path: "/plan", label: "训练", icon: Path },
+        { path: "/thinking", label: "思维框架", icon: BookOpen },
         { path: "/history", label: "记录", icon: ClockCounterClockwise },
       ].map(({ path, label, icon: Icon }) => (
         <a
           key={path}
           href={`#${path}`}
+          onClick={(event) => {
+            event.preventDefault();
+            go(path);
+          }}
           className={active === path ? "active" : ""}
           aria-current={active === path ? "page" : undefined}
         >
@@ -198,7 +204,13 @@ export function Report({ feedback }: { feedback: Feedback }) {
     <div className="report">
       <div className="report-label">
         <Sparkle size={18} />
-        {feedback.provider === "agnes" ? "Agnes · 多维表达点评" : feedback.provider === "jev" ? "Jev 结构化评估" : feedback.source === "ai" ? "AI 表达点评" : "基础反馈 · 非 AI 点评"}
+        {feedback.provider === "agnes"
+          ? "Agnes · 多维表达点评"
+          : feedback.provider === "jev"
+            ? "Jev 结构化评估"
+            : feedback.source === "ai"
+              ? "AI 表达点评"
+              : "基础反馈 · 非 AI 点评"}
       </div>
       <h2>
         {feedback.source === "ai"
@@ -206,7 +218,15 @@ export function Report({ feedback }: { feedback: Feedback }) {
           : "看见这一次的练习"}
       </h2>
       <p className="report-summary">{feedback.summary}</p>
-      {feedback.answerGuide && <details className="coaching-guide"><summary>查看本题参考标准 · {feedback.profileName}</summary><p>开放表达没有唯一标准答案。按下面的要点组织内容，方括号需填写真实信息，不必逐字照背。</p><p>{feedback.answerGuide}</p></details>}
+      {feedback.answerGuide && (
+        <details className="coaching-guide">
+          <summary>查看本题参考标准 · {feedback.profileName}</summary>
+          <p>
+            开放表达没有唯一标准答案。按下面的要点组织内容，方括号需填写真实信息，不必逐字照背。
+          </p>
+          <p>{feedback.answerGuide}</p>
+        </details>
+      )}
       <div className="report-metrics">
         <div>
           <strong>{feedback.metrics.characters}</strong>
@@ -221,33 +241,67 @@ export function Report({ feedback }: { feedback: Feedback }) {
           <span>待检查用词</span>
         </div>
       </div>
-      {feedback.provider === "jev" && feedback.judgments ? <JevReport feedback={feedback} /> : <div className="dimension-list">
-        {feedback.dimensions.map((d, i) => (
-          <article key={i}>
-            <span className="dimension-index">0{i + 1}</span>
-            <div>
-              <h3>{d.title}{d.status && <span className="coaching-status"> · {{good:"已做到",partial:"需完善",missing:"未体现",unsure:"需确认"}[d.status]}</span>}</h3>
-              {d.standard && <details><summary>这一项的标准</summary><p>{d.standard}</p></details>}
-              {d.evidence?.map((quote, n) => <blockquote className="coaching-quote" key={n}>{quote}</blockquote>)}
-              <p>{d.text}</p>
-              {d.advice && <p className="coaching-advice"><strong>怎么改：</strong>{d.advice}</p>}
-            </div>
-          </article>
-        ))}
-      </div>
-      }
-      {feedback.improvements.length > 0 && <div className="improvement">
-        <h3>
-          <CheckCircle size={20} />
-          下次试试这样做
-        </h3>
-        {feedback.improvements.map((t, i) => (
-          <p key={i}>
-            {i + 1}. {t}
-          </p>
-        ))}
-      </div>
-      }
+      {feedback.provider === "jev" && feedback.judgments ? (
+        <JevReport feedback={feedback} />
+      ) : (
+        <div className="dimension-list">
+          {feedback.dimensions.map((d, i) => (
+            <article key={i}>
+              <span className="dimension-index">0{i + 1}</span>
+              <div>
+                <h3>
+                  {d.title}
+                  {d.status && (
+                    <span className="coaching-status">
+                      {" "}
+                      ·{" "}
+                      {
+                        {
+                          good: "已做到",
+                          partial: "需完善",
+                          missing: "未体现",
+                          unsure: "需确认",
+                        }[d.status]
+                      }
+                    </span>
+                  )}
+                </h3>
+                {d.standard && (
+                  <details>
+                    <summary>这一项的标准</summary>
+                    <p>{d.standard}</p>
+                  </details>
+                )}
+                {d.evidence?.map((quote, n) => (
+                  <blockquote className="coaching-quote" key={n}>
+                    {quote}
+                  </blockquote>
+                ))}
+                <p>{d.text}</p>
+                {d.advice && (
+                  <p className="coaching-advice">
+                    <strong>怎么改：</strong>
+                    {d.advice}
+                  </p>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+      {feedback.improvements.length > 0 && (
+        <div className="improvement">
+          <h3>
+            <CheckCircle size={20} />
+            下次试试这样做
+          </h3>
+          {feedback.improvements.map((t, i) => (
+            <p key={i}>
+              {i + 1}. {t}
+            </p>
+          ))}
+        </div>
+      )}
       {feedback.rewrite && (
         <div className="rewrite">
           <h3>一种更清楚的说法</h3>
@@ -256,9 +310,11 @@ export function Report({ feedback }: { feedback: Feedback }) {
         </div>
       )}
       <p className="disclaimer">
-        {feedback.provider === "jev" ? "以上为模型对固定标准的判断，可能有偏差，不评价发音与语调；练习建议由应用提供。" : feedback.source === "ai"
-          ? "点评由 AI 根据文字生成，可能存在偏差，不评价发音与语调。"
-          : "基础反馈仅使用文本统计和固定自查规则，不判断观点质量。"}
+        {feedback.provider === "jev"
+          ? "以上为模型对固定标准的判断，可能有偏差，不评价发音与语调；练习建议由应用提供。"
+          : feedback.source === "ai"
+            ? "点评由 AI 根据文字生成，可能存在偏差，不评价发音与语调。"
+            : "基础反馈仅使用文本统计和固定自查规则，不判断观点质量。"}
       </p>
     </div>
   );

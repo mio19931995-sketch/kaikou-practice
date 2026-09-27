@@ -38,12 +38,10 @@ export function createApp({
       refreshConfig?.();
       next();
     } catch {
-      res
-        .status(503)
-        .json({
-          error:
-            "已保存的 AI 配置暂时无法读取，请在设置中重新检查；本次不会改用基础反馈。",
-        });
+      res.status(503).json({
+        error:
+          "已保存的 AI 配置暂时无法读取，请在设置中重新检查；本次不会改用基础反馈。",
+      });
     }
   });
   app.get("/api/status", (_req, res) =>
@@ -76,8 +74,14 @@ export function createApp({
     try {
       // DeepSeek's current API defaults to thinking mode. For a short, structured
       // coaching response, explicitly disable it and request JSON output.
-      const isAgnes = new URL(env.AI_BASE_URL).hostname === "apihub.agnes-ai.com";
+      const isAgnes =
+        new URL(env.AI_BASE_URL).hostname === "apihub.agnes-ai.com";
       const isJev = new URL(env.AI_BASE_URL).hostname === "api.typesafe.ai";
+      if (isJev && input.thinkingModelId)
+        return res.status(422).json({
+          error:
+            "当前 Jev 规则尚未覆盖思维框架应用练习，请在设置中选择 Agnes 或兼容模型；也可以先保存练习。",
+        });
       const isDeepSeek =
         new URL(env.AI_BASE_URL).hostname === "api.deepseek.com";
       const upstream = await fetcher(
@@ -88,19 +92,25 @@ export function createApp({
             Authorization: `Bearer ${env.AI_API_KEY}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(isJev ? jevRequest(input, env.AI_MODEL) : {
-            model: env.AI_MODEL,
-            messages: isAgnes ? buildAgnesMessages(input) : buildMessages(input),
-            stream: false,
-            max_tokens: 2500,
-            temperature: 0.5,
-            ...(isDeepSeek
-              ? {
-                  thinking: { type: "disabled" },
-                  response_format: { type: "json_object" },
-                }
-              : {}),
-          }),
+          body: JSON.stringify(
+            isJev
+              ? jevRequest(input, env.AI_MODEL)
+              : {
+                  model: env.AI_MODEL,
+                  messages: isAgnes
+                    ? buildAgnesMessages(input)
+                    : buildMessages(input),
+                  stream: false,
+                  max_tokens: 2500,
+                  temperature: 0.5,
+                  ...(isDeepSeek
+                    ? {
+                        thinking: { type: "disabled" },
+                        response_format: { type: "json_object" },
+                      }
+                    : {}),
+                },
+          ),
           signal: AbortSignal.timeout(90000),
         },
       );
@@ -115,17 +125,23 @@ export function createApp({
         });
       const data = await upstream.json();
       if (isJev) return res.json(parseJev(data, input));
-      if (data.choices?.[0]?.finish_reason === 'length') throw new Error('Incomplete provider response');
+      if (data.choices?.[0]?.finish_reason === "length")
+        throw new Error("Incomplete provider response");
       const content = data.choices?.[0]?.message?.content;
       if (typeof content !== "string")
         throw new Error("Invalid provider response");
-      res.json(isAgnes ? parseAgnes(content, input) : parseReport(content, input));
+      res.json({
+        ...(isAgnes ? parseAgnes(content, input) : parseReport(content, input)),
+        model: env.AI_MODEL,
+      });
     } catch (error) {
       res.status(502).json({
         error:
           error.name === "TimeoutError"
             ? "AI 分析超时了，请稍后重试。你的内容仍保留在页面中。"
-            : "本次 AI 分析未完成，请重试。不会用预设内容替代 AI 结果。",
+            : error.name === "TypeError"
+              ? "未能连接 AI 服务，请检查网络后重试。已保存的录音和文字不受影响。"
+              : "AI 返回的点评未通过完整性或原文校验，请重试。已保存的内容仍保留，不会用基础反馈替代。",
       });
     }
   });

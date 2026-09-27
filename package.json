@@ -1,6 +1,6 @@
 {
   "name": "kaikou-practice",
-  "version": "0.7.0",
+  "version": "0.10.0",
   "description": "开口表达练习室：即兴表达、逻辑训练与复述练习",
   "author": "Kaikou Studio",
   "main": "desktop/main.cjs",

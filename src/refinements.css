@@ -1,0 +1,304 @@
+/* Scoped refinement: calmer reading and recording, existing navigation preserved. */
+:root {
+  --ink-green: #2f5d50;
+  --ink-soft: #eaefee;
+  --ink-mid: #acbeb9;
+}
+.thinking-page {
+  background: #f9f9f7;
+  color: #131313;
+}
+.thinking-page .button.primary,
+.thinking-page .path-node.is-practice {
+  background: var(--ink-green);
+  color: #fff;
+  box-shadow: none;
+}
+.thinking-page :is(.quick-card, .thinking-card, .path-unit, .lesson-group) {
+  background: #fff;
+  box-shadow: none;
+  border-color: #1e1e1d26;
+}
+.thinking-page
+  :is(.status-chip, .thinking-boundary, .thinking-notebook, .lesson-outcome) {
+  background: var(--ink-soft);
+  color: #2f5d50;
+}
+.thinking-page :is(.thinking-card-top > span, .thinking-eyebrow, .path-no) {
+  color: #58665f;
+}
+.thinking-page .thinking-card:hover {
+  transform: none;
+  border-color: #2f5d50;
+}
+.thinking-page
+  :is(
+    .thinking-filters button[aria-pressed="true"],
+    .lesson-tabs button[aria-selected="true"]
+  ) {
+  background: #eaefee;
+  color: #24483e;
+  border-color: #2f5d50;
+}
+.thinking-page .thinking-hero {
+  background: #f3f3f0;
+  background-image: none;
+}
+.thinking-page .thinking-hero-note {
+  background: #eaefee;
+  color: #2f5d50;
+}
+.thinking-page .speak-entry {
+  background: #eaefee;
+  border-color: #acbeb9;
+  color: #24483e;
+}
+.thinking-page a:focus-visible,
+.thinking-page button:focus-visible,
+.thinking-page summary:focus-visible {
+  outline-color: #2f5d50;
+}
+.thinking-page ::selection {
+  background: #acbeb9;
+  color: #131313;
+}
+.thinking-page input,
+.thinking-page textarea {
+  caret-color: #2f5d50;
+}
+.practice-workspace {
+  --accent: #eaf0ec;
+  --border: #739286;
+  --muted: #d6e2dd;
+  --card: #24483e;
+  --surface: #24483e;
+  --subtle: #385f53;
+  --text: #f9f9f7;
+}
+.app-shell:has(.practice-workspace),
+.app-shell.desktop-shell.dark:has(.practice-workspace) {
+  background: #2f5d50;
+  background-image: none;
+}
+.desktop-shell .practice-content,
+.practice-content,
+.practice-guide {
+  background: #2f5d50;
+  background-image: none;
+  border-color: #739286;
+  color: #f9f9f7;
+}
+.practice-workspace
+  :is(
+    .question-card,
+    .word-card,
+    .review-topic,
+    .reference-details,
+    .report-summary,
+    .dimension-list article
+  ) {
+  background: #24483e;
+  background-image: none;
+  border-color: #739286;
+  color: #f9f9f7;
+}
+.practice-workspace
+  :is(
+    .service-note,
+    .practice-heading .eyebrow,
+    .question-label,
+    .question-card-bottom,
+    .practice-guide > p,
+    .practice-guide li,
+    .header-pill
+  ) {
+  color: #d6e2dd;
+}
+.practice-workspace .button.primary {
+  background: #f9f9f7;
+  color: #24483e;
+  box-shadow: none;
+}
+.practice-workspace .button.primary:hover:not(:disabled) {
+  background: #eaefee;
+}
+.practice-workspace .button.secondary {
+  background: #24483e;
+  color: #f9f9f7;
+  border-color: #acbeb9;
+}
+.practice-workspace .prep-options button {
+  background: #24483e;
+  color: #f9f9f7;
+  border-color: #739286;
+}
+.practice-workspace .prep-options button.selected {
+  background: #eaefee;
+  color: #24483e;
+  border-color: #f9f9f7;
+}
+.practice-workspace .prep-options small {
+  color: #d6e2dd;
+}
+.practice-workspace .prep-options button.selected :is(small, svg) {
+  color: #24483e;
+}
+.practice-workspace .practice-guide li > span {
+  background: #eaefee;
+  color: #24483e;
+}
+.practice-workspace :is(.mini-steps span, .review-actions) {
+  background: #24483e;
+  color: #f9f9f7;
+}
+.practice-workspace .record-timer span {
+  color: #f9f9f7;
+  font-variant-numeric: tabular-nums;
+}
+.practice-workspace .stop-record {
+  background: #f9f9f7;
+  color: #2f5d50;
+  box-shadow: none;
+}
+.practice-workspace textarea {
+  background: #183b31;
+  color: #f9f9f7;
+  border-color: #acbeb9;
+  caret-color: #fff;
+}
+.practice-workspace textarea::placeholder {
+  color: #c8d8d1;
+}
+.practice-workspace :is(button, input, textarea, summary):focus-visible {
+  outline: 2px solid #f9f9f7;
+  outline-offset: 4px;
+}
+.duration-section .prep-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.duration-section .prep-options button {
+  min-width: 0;
+}
+.preparation-draft {
+  margin: 24px 0;
+  padding: 20px 0;
+  border-block: 1px solid #739286;
+}
+.preparation-draft summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.preparation-draft label {
+  display: block;
+  margin: 16px 0 8px;
+}
+.preparation-draft textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: 16px;
+  border-radius: 10px;
+}
+.preparation-draft p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.9;
+}
+.preparation-draft small {
+  display: block;
+  color: #d6e2dd;
+  margin-top: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .thinking-page *,
+  .practice-workspace * {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.practice-next,
+.attempt-comparison,
+.practice-focus,
+.analysis-progress {
+  margin-block: 24px;
+  padding: 24px;
+  border: 1px solid var(--border, #acbeb9);
+  border-radius: 12px;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+.practice-next h3,
+.attempt-comparison h3 {
+  margin: 0 0 12px;
+}
+.practice-next p,
+.attempt-comparison p,
+.practice-focus p {
+  line-height: 1.8;
+}
+.practice-next fieldset {
+  border: 0;
+  padding: 0;
+  margin: 20px 0;
+}
+.practice-next legend {
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+.practice-next label {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 0;
+  cursor: pointer;
+  line-height: 1.8;
+}
+.practice-next input {
+  margin-top: 7px;
+  flex-shrink: 0;
+  accent-color: #2f5d50;
+}
+.practice-workspace .practice-next input {
+  accent-color: #dcebd7;
+}
+.practice-next label:has(input:checked) span {
+  font-weight: 700;
+}
+.attempt-comparison details {
+  padding: 16px 0;
+  border-top: 1px solid var(--border, #acbeb9);
+}
+.attempt-comparison summary {
+  cursor: pointer;
+  line-height: 1.8;
+}
+.comparison-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.comparison-columns blockquote {
+  margin: 12px 0;
+  padding: 12px;
+  background: #eaefee;
+  color: #24483e;
+  border-radius: 8px;
+}
+.analysis-progress small {
+  line-height: 1.8;
+}
+@media (max-width: 640px) {
+  .comparison-columns {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .practice-next,
+  .attempt-comparison,
+  .practice-focus,
+  .analysis-progress {
+    padding: 18px;
+  }
+}

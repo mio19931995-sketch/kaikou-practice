@@ -4,7 +4,7 @@
 
 ## 下载使用
 
-**[下载 Windows 安装包 v0.7.0](https://github.com/mio19931995-sketch/kaikou-practice/releases/download/v0.7.0/Kaikou-Setup-0.7.0.exe)** · [版本说明](https://github.com/mio19931995-sketch/kaikou-practice/releases)
+**[下载 Windows 安装包 v0.10.0](https://github.com/mio19931995-sketch/kaikou-practice/releases/download/v0.10.0/Kaikou-Setup-0.10.0.exe)** · [版本说明](https://github.com/mio19931995-sketch/kaikou-practice/releases)
 
 适用于 Windows x64。安装后从桌面快捷方式启动，无需安装 Node.js。当前安装包未进行代码签名。
 
@@ -26,6 +26,17 @@
 - 21 天训练计划、历史练习、保存点评与导出文字。
 
 点评基于转写文字，不评价发音、语调或情绪。开放式表达没有唯一标准答案，参考框架中的事实需要自己补充。AI 判断可能有误，请结合实际沟通目的使用。
+
+## v0.10.0 更新
+
+- 独立思维框架学习板块：12 个框架、图解、案例、笔记与复习记录，可选进入对应表达练习。
+- 录音支持 30 / 60 / 90 / 180 秒，可先写提纲；提纲不会被当作语音转写。
+- 点评后选择一个改进点，同题再练，两次记录分别保存。
+- Agnes / Jev 结构化点评支持前后原话对照；模型或标准不同时不直接比较判断。
+- 点评前先保存练习；失败后保留内容并支持重试，展示等待时间。
+- Agnes 原话引用使用片段定位，兼容缺省的逐维建议，不补造模型未提供的内容。
+
+[详细更新说明](docs/同题再练与失败恢复-0.10.0.md)。思维框架应用点评当前支持 Agnes 和兼容模型，Jev 尚未覆盖这组标准。
 
 ## 本地语音转文字（可选）
 

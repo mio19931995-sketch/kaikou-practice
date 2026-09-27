@@ -1,14 +1,18 @@
 import { z } from "zod";
-import { jsonrepair } from 'jsonrepair';
+import { jsonrepair } from "jsonrepair";
+import thinkingRubrics from "./thinking-rubrics.json" with { type: "json" };
 
 export const analysisInput = z.object({
+  thinkingModelId: z.enum(Object.keys(thinkingRubrics)).optional(),
   transcript: z.string().trim().min(5, "至少写下 5 个字，再来分析。").max(6000),
   topic: z.string().trim().min(1).max(500),
   mode: z.enum(["improv", "logic", "retell"]),
   duration: z.number().finite().min(0).max(300).default(0),
   framework: z.string().max(100).optional(),
   material: z.string().max(5000).optional(),
-  ruleProfile: z.enum(["auto", "general", "report", "interview", "persuade", "retell"]).optional(),
+  ruleProfile: z
+    .enum(["auto", "general", "report", "interview", "persuade", "retell"])
+    .optional(),
 });
 export const reportSchema = z.object({
   summary: z.string().min(1).max(1200),
@@ -82,10 +86,14 @@ export function buildMessages(input) {
     {
       role: "user",
       content: JSON.stringify({
-        formatReminder: '务必返回合法 JSON。分析文字内引用原话时使用中文引号“”，不要使用未转义的英文双引号。',
+        formatReminder:
+          "务必返回合法 JSON。分析文字内引用原话时使用中文引号“”，不要使用未转义的英文双引号。",
         trainingMode: input.mode,
         question: input.topic,
         framework: input.framework,
+        thinkingCriteria: input.thinkingModelId
+          ? thinkingRubrics[input.thinkingModelId]
+          : undefined,
         originalMaterial: input.material,
         transcript: input.transcript,
       }),
@@ -97,10 +105,14 @@ export function parseReport(content, input) {
     .trim()
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/, "");
-  if (clean.length > 30000 || !clean.startsWith('{') || !clean.endsWith('}')) throw new Error('Incomplete report');
+  if (clean.length > 30000 || !clean.startsWith("{") || !clean.endsWith("}"))
+    throw new Error("Incomplete report");
   let parsed;
-  try { parsed = JSON.parse(clean); }
-  catch { parsed = JSON.parse(jsonrepair(clean)); }
+  try {
+    parsed = JSON.parse(clean);
+  } catch {
+    parsed = JSON.parse(jsonrepair(clean));
+  }
   return {
     ...reportSchema.parse(parsed),
     source: "ai",

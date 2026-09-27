@@ -1,4 +1,5 @@
 import { ServiceSettings } from "./ServiceSettings";
+import { ThinkingLibrary } from "./ThinkingLibrary";
 import { SavedPractice } from "./SavedPractice";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -800,11 +801,11 @@ function RecordDetail({
           className="button secondary full"
           onClick={() =>
             go(
-              `/practice/${session.mode}${session.framework ? `?framework=${session.framework}` : ""}`,
+              `/practice/${session.mode}?retry=${encodeURIComponent(session.id)}`,
             )
           }
         >
-          再练一次
+          同题重新练习
           <ArrowRight size={20} />
         </button>
       </main>
@@ -945,6 +946,7 @@ export default function App() {
   const [path, query = ""] = route.split("?");
   const search = new URLSearchParams(query);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
   const [storageError, setStorageError] = useState("");
   const [status, setStatus] = useState<ServiceStatus>({
     ai: false,
@@ -957,6 +959,8 @@ export default function App() {
       setStorageError("");
     } catch (e) {
       setStorageError((e as Error).message);
+    } finally {
+      setSessionsLoaded(true);
     }
   }, []);
   const refreshStatus = useCallback(
@@ -994,6 +998,10 @@ export default function App() {
       <Home sessions={sessions} />
     );
   else if (path === "/logic") page = <Logic />;
+  else if (path === "/thinking")
+    page = (
+      <ThinkingLibrary modelId={search.get("model")} sessions={sessions} />
+    );
   else if (path === "/library") page = <Library key={route} search={search} />;
   else if (path === "/plan") page = <Plan sessions={sessions} />;
   else if (path.startsWith("/lesson/"))
@@ -1017,15 +1025,27 @@ export default function App() {
     path.startsWith("/practice/") &&
     ["improv", "logic", "retell"].includes(path.split("/")[2])
   )
-    page = (
-      <Practice
-        key={route}
-        mode={path.split("/")[2] as Mode}
-        search={search}
-        status={status}
-        onSaved={refresh}
-      />
-    );
+    page =
+      search.has("retry") &&
+      !sessions.some((s) => s.id === search.get("retry")) ? (
+        <main className="page">
+          <p role="status">
+            {sessionsLoaded
+              ? "找不到上次练习，请从练习记录重新进入。"
+              : "正在读取上次练习…"}
+          </p>
+          <a href="#/history">返回练习记录</a>
+        </main>
+      ) : (
+        <Practice
+          key={route}
+          mode={path.split("/")[2] as Mode}
+          search={search}
+          retrySession={sessions.find((s) => s.id === search.get("retry"))}
+          status={status}
+          onSaved={refresh}
+        />
+      );
   else page = <NotFound />;
   const content = (
     <div

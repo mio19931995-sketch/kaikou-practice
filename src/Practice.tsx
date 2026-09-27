@@ -1,3 +1,5 @@
+import { PracticeNext, AnalysisProgress } from "./PracticeLoop";
+import { AttemptComparison } from "./ScenarioReport";
 import { RuleSelector } from "./RuleSelector";
 import type { RuleProfile } from "./types";
 import { useEffect, useRef, useState } from "react";
@@ -37,44 +39,87 @@ import { saveSession } from "./storage";
 import { scenarios } from "./scenarios";
 import type { Feedback, Mode, ServiceStatus, Session } from "./types";
 import { speechSupported, useRecorder } from "./useRecorder";
+import { thinkingModels } from "./thinkingData";
+import { thinkingPractice } from "./thinkingPractice";
+const clockText = (n: number) =>
+  `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
 
 export function Practice({
   mode,
   search,
   status,
   onSaved,
+  retrySession,
 }: {
+  retrySession?: Session;
   mode: Mode;
   search: URLSearchParams;
   status: ServiceStatus;
   onSaved: () => Promise<void>;
 }) {
+  const practiceFocus =
+    retrySession?.feedback?.improvements[Number(search.get("focus")) || 0];
   const lesson = lessons.find((l) => l.day === Number(search.get("lesson")));
   const scene =
     mode === "logic"
       ? scenarios.find((s) => s.id === search.get("scene"))
       : undefined;
   const practiceTopics = scene?.prompts || topics;
-  const framework =
-    frameworks.find((f) => f.id === search.get("framework")) || frameworks[1];
-  const material =
-    materials.find((m) => m.id === search.get("material")) || materials[0];
+  const thinking =
+    mode === "logic"
+      ? thinkingModels.find(
+          (m) =>
+            m.id === (retrySession?.thinkingModelId || search.get("thinking")),
+        )
+      : undefined;
+  const baseFramework =
+    frameworks.find(
+      (f) =>
+        retrySession?.framework?.startsWith(f.name) ||
+        f.id === search.get("framework"),
+    ) || frameworks[1];
+  const framework = thinking
+    ? {
+        ...baseFramework,
+        id: thinking.id,
+        name: thinking.name,
+        subtitle: "思维框架应用",
+        description: thinking.summary,
+        steps: thinking.steps,
+      }
+    : baseFramework;
+  const material = retrySession?.material
+    ? {
+        ...materials[0],
+        title: retrySession.topic,
+        text: retrySession.material,
+      }
+    : materials.find((m) => m.id === search.get("material")) || materials[0];
   const [view, setView] = useState<"setup" | "session" | "review" | "report">(
     "setup",
   );
   const [topic, setTopic] = useState(
-    lesson?.task || (scene ? scene.prompts[0] : pick(topics)),
+    retrySession?.topic ||
+      (thinking
+        ? thinkingPractice[thinking.id].task
+        : lesson?.task || (scene ? scene.prompts[0] : pick(topics))),
   );
   const [kind, setKind] = useState("question");
   const [category, setCategory] = useState("全部");
   const [wordCount, setWordCount] = useState(2);
   const [words, setWords] = useState(["蜡烛", "机会"]);
   const [prepTime, setPrepTime] = useState(3);
+  const [targetDuration, setTargetDuration] = useState(
+    retrySession?.targetDuration || 60,
+  );
+  const [draft, setDraft] = useState("");
   const [countdown, setCountdown] = useState<number | null>(null);
   const [browserSpeech, setBrowserSpeech] = useState(
     !status.asr && speechSupported(),
   );
-  const [ruleProfile, setRuleProfile] = useState<RuleProfile>("auto");
+  const [ruleProfile, setRuleProfile] = useState<RuleProfile>(
+    retrySession?.ruleProfile || "auto",
+  );
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [working, setWorking] = useState("");
@@ -84,17 +129,19 @@ export function Practice({
   const [feedback, setFeedback] = useState<Feedback>();
   const [saved, setSaved] = useState(false);
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
-  const recorder = useRecorder();
+  const recorder = useRecorder(targetDuration);
   const autoTranscribed = useRef(false);
   const active = useRef(true);
   const question =
-    mode === "retell"
+    retrySession?.topic ||
+    (mode === "retell"
       ? material.title
       : mode === "improv" && kind === "words"
         ? `用“${words.join("、")}”讲一个故事或观点`
-        : topic;
+        : topic);
   useEffect(() => {
     const dirty =
+      (view === "setup" && Boolean(draft) && !saved) ||
       view === "session" ||
       (view === "review" && Boolean(text || recorder.blob)) ||
       (view === "report" && !saved);
@@ -118,7 +165,7 @@ export function Practice({
       setNavigationGuard(undefined);
       window.removeEventListener("beforeunload", beforeUnload);
     };
-  }, [view, text, recorder.blob, saved, working]);
+  }, [view, text, draft, recorder.blob, saved, working]);
   useEffect(() => {
     active.current = true;
     return () => {
@@ -187,16 +234,29 @@ export function Practice({
     go(
       lesson
         ? `/lesson/${lesson.day}`
-        : mode === "logic"
-          ? "/logic"
-          : mode === "retell"
-            ? "/library"
-            : "/",
+        : thinking
+          ? `/thinking?model=${thinking.id}`
+          : mode === "logic"
+            ? "/logic"
+            : mode === "retell"
+              ? "/library"
+              : "/",
     );
   }
   function session(report?: Feedback): Session {
     return {
       id: sessionId,
+      retryOf: retrySession?.id,
+      practiceFocus,
+      previousAttempt: retrySession?.feedback
+        ? {
+            transcript: retrySession.transcript,
+            feedback: retrySession.feedback,
+          }
+        : undefined,
+      thinkingModelId: thinking?.id,
+      targetDuration,
+      preparationDraft: draft || undefined,
       createdAt: new Date().toISOString(),
       mode,
       topic: question,
@@ -204,9 +264,12 @@ export function Practice({
       duration: recorder.blob ? recorder.seconds : 0,
       ruleProfile,
       framework:
-        mode === "logic"
-          ? `${framework.name}：${framework.steps.join(" → ")}`
-          : undefined,
+        retrySession?.framework ||
+        (mode === "logic"
+          ? thinking
+            ? thinking.name
+            : `${framework.name}：${framework.steps.join(" → ")}`
+          : undefined),
       material: mode === "retell" ? material.text : undefined,
       lessonDay: lesson?.day,
       audio: recorder.blob,
@@ -232,8 +295,10 @@ export function Practice({
     setWorking(status.ai ? "正在阅读你的表达，生成点评…" : "正在整理本次练习…");
     setError("");
     try {
+      await persist();
       const result = await analyze(session());
       if (!active.current) return;
+      setSaved(false);
       setFeedback(result);
       setView("report");
       window.scrollTo(0, 0);
@@ -296,7 +361,7 @@ export function Practice({
         onBack={back}
         right={
           <span className="header-pill">
-            {lesson ? `DAY ${lesson.day}` : "60s"}
+            {lesson ? `DAY ${lesson.day}` : `${targetDuration}s`}
           </span>
         }
       />
@@ -321,9 +386,16 @@ export function Practice({
         </div>
         <div className="practice-columns">
           <main className={`page-content practice-content view-${view}`}>
+            {retrySession && view !== "report" && (
+              <section className="practice-focus">
+                <h3>同一道题，再试一次</h3>
+                <p>{practiceFocus || "保留已有优点，把想法说得更清楚。"}</p>
+                <small>题目和点评标准保持不变，上次练习不会被覆盖。</small>
+              </section>
+            )}
             {view === "setup" && (
               <>
-                {mode === "improv" && !lesson && (
+                {mode === "improv" && !lesson && !retrySession && (
                   <div className="segmented" role="group" aria-label="出题方式">
                     <button
                       className={kind === "question" ? "selected" : ""}
@@ -416,17 +488,22 @@ export function Practice({
                         <Clock size={15} />
                         {mode === "retell"
                           ? "建议阅读 30 秒"
-                          : "表达时间 60 秒"}
+                          : `表达时间 ${targetDuration} 秒`}
                       </span>
-                      {mode !== "retell" && !lesson && (
-                        <button
-                          className="text-button"
-                          onClick={() => setTopic(pick(practiceTopics, topic))}
-                        >
-                          <Shuffle size={17} />
-                          换一题
-                        </button>
-                      )}
+                      {mode !== "retell" &&
+                        !lesson &&
+                        !thinking &&
+                        !retrySession && (
+                          <button
+                            className="text-button"
+                            onClick={() =>
+                              setTopic(pick(practiceTopics, topic))
+                            }
+                          >
+                            <Shuffle size={17} />
+                            换一题
+                          </button>
+                        )}
                     </div>
                   </article>
                 )}
@@ -449,6 +526,43 @@ export function Practice({
                     ))}
                   </div>
                 )}
+                <section className="prep-section duration-section">
+                  <h2>这次想说多久？</h2>
+                  <div className="prep-options" aria-label="表达时长">
+                    {[30, 60, 90, 180].map((n) => (
+                      <button
+                        key={n}
+                        aria-pressed={targetDuration === n}
+                        className={targetDuration === n ? "selected" : ""}
+                        onClick={() => setTargetDuration(n)}
+                      >
+                        {n}
+                        <small>秒</small>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="service-note">
+                    可以提前结束；到所选时长自动收尾。长回答建议选 90 或 180
+                    秒。
+                  </p>
+                </section>
+                <details className="preparation-draft">
+                  <summary>先写提纲，再开口（可选）</summary>
+                  {thinking && (
+                    <p>{thinkingPractice[thinking.id].template.join("\n")}</p>
+                  )}
+                  <label htmlFor="preparation-draft">我的表达提纲</label>
+                  <textarea
+                    id="preparation-draft"
+                    value={draft}
+                    maxLength={3000}
+                    placeholder="我想表达的重点……\n用哪个例子说明……\n最后想让对方记住……"
+                    onChange={(e) => setDraft(e.target.value)}
+                  />
+                  <small>
+                    提纲与转写分开。录音点评只使用实际转写；保存练习时一并保存提纲。
+                  </small>
+                </details>
                 <section className="prep-section">
                   <h2>留多少时间准备？</h2>
                   <div className="prep-options">
@@ -483,7 +597,9 @@ export function Practice({
                 )}
                 {status.asr && (
                   <p className="service-note">
-                    {status.asrMode === 'local' ? '录音结束后自动在本机转成文字，音频不会上传。' : '录音结束后，将发送本次音频进行云端转写。'}
+                    {status.asrMode === "local"
+                      ? "录音结束后自动在本机转成文字，音频不会上传。"
+                      : "录音结束后，将发送本次音频进行云端转写。"}
                   </p>
                 )}
                 {!status.ai && (
@@ -510,10 +626,13 @@ export function Practice({
                   <button
                     className="text-button manual-button"
                     disabled={busy}
-                    onClick={() => setView("review")}
+                    onClick={() => {
+                      setText(draft);
+                      setView("review");
+                    }}
                   >
                     <PencilSimple size={16} />
-                    也可以用文字练习
+                    {draft ? "用这份提纲进行文字练习" : "也可以用文字练习"}
                   </button>
                 </div>
               </>
@@ -542,8 +661,8 @@ export function Practice({
                   ) : (
                     <>
                       <div className="record-timer">
-                        <span>{`00:${String(recorder.seconds).padStart(2, "0")}`}</span>
-                        <small>/ 01:00</small>
+                        <span>{clockText(recorder.seconds)}</span>
+                        <small>/ {clockText(targetDuration)}</small>
                       </div>
                       <WaveformCanvas
                         analyser={recorder.analyser}
@@ -553,9 +672,22 @@ export function Practice({
                         {recorder.transcript ||
                           "说出第一个想法，就已经是一个开始。"}
                       </p>
+                      {recorder.phase === "recording" &&
+                        targetDuration - recorder.seconds <= 5 && (
+                          <p role="status">
+                            还有 {targetDuration - recorder.seconds}{" "}
+                            秒，可以用一句话收束。
+                          </p>
+                        )}
                     </>
                   )}
                 </div>
+                {draft && (
+                  <details className="preparation-draft">
+                    <summary>需要提示时，看一眼提纲</summary>
+                    <p>{draft}</p>
+                  </details>
+                )}
                 {recorder.phase === "recording" && (
                   <div className="record-action">
                     <button
@@ -633,7 +765,15 @@ export function Practice({
                               : "录音已完成，等待转写结果。"}
                     </div>
                   )}
-                  <RuleSelector value={ruleProfile} onChange={setRuleProfile} disabled={Boolean(working) || mode === "retell"} />
+                  <RuleSelector
+                    value={ruleProfile}
+                    onChange={setRuleProfile}
+                    disabled={
+                      Boolean(working) ||
+                      mode === "retell" ||
+                      Boolean(retrySession)
+                    }
+                  />
                   <textarea
                     id="transcript"
                     aria-label="我的表达"
@@ -673,6 +813,10 @@ export function Practice({
                     重新转写录音
                   </button>
                 )}
+                {working && <AnalysisProgress message={working} />}
+                {(error || recorder.error) && (
+                  <ErrorNote>{error || recorder.error}</ErrorNote>
+                )}
                 <div className="review-actions">
                   <button
                     className="button primary full"
@@ -680,7 +824,11 @@ export function Practice({
                     onClick={submit}
                   >
                     <Sparkle size={20} />
-                    {status.ai ? "生成 AI 点评" : "查看基础反馈"}
+                    {status.ai
+                      ? error
+                        ? "重试 AI 点评"
+                        : "生成 AI 点评"
+                      : "查看基础反馈"}
                   </button>
                   <div className="two-buttons">
                     <button
@@ -727,6 +875,11 @@ export function Practice({
                     "本次反馈尚未保存"
                   )}
                 </div>
+                <PracticeNext
+                  session={session(feedback)}
+                  disabled={!saved || Boolean(working)}
+                />
+                <AttemptComparison session={session(feedback)} />
                 <Report feedback={feedback} />
                 <details className="reference-details">
                   <summary>回看我的表达与录音</summary>
@@ -751,26 +904,26 @@ export function Practice({
                         !window.confirm("本次反馈尚未保存，仍要离开吗？")
                       )
                         return;
-                      reset();
-                      setTopic(pick(practiceTopics, topic));
+                      setNavigationGuard(undefined);
+                      go(`/practice/${mode}`);
                     }}
                   >
-                    再练一次
+                    换个题目练习
                   </button>
                 </div>
               </>
             )}
-            {working && (
+            {working && view !== "review" && (
               <div className="working-note" role="status">
                 <span className="loading-dots">
                   <i />
                   <i />
                   <i />
                 </span>
-                {working}
+                <AnalysisProgress message={working} />
               </div>
             )}
-            {(error || recorder.error) && (
+            {(error || recorder.error) && view !== "review" && (
               <ErrorNote>{error || recorder.error}</ErrorNote>
             )}
             {recorder.speechError && view !== "report" && (

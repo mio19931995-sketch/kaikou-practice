@@ -16,3 +16,25 @@ test('Agnes rejects invented quotations, wrong dimensions, instruction echo and 
  const echo=structuredClone(fixture.feedback);echo.summary='仅输出 JSON 对象';assert.throws(()=>parseAgnes(JSON.stringify(echo),fixture.input));
  assert.throws(()=>parseAgnes('{"summary":"a"}',fixture.input));
 });
+
+test('Agnes accepts omitted optional advice without inventing it, but still rejects invalid evidence and missing analysis', () => {
+  const response = structuredClone(fixture.feedback);
+  response.dimensions.forEach((d, i) => { if (i === 0) delete d.advice; else d.advice = i % 2 ? null : ''; });
+  const result = parseAgnes(JSON.stringify(response), fixture.input);
+  assert.ok(result.dimensions.every(d => d.advice === undefined));
+  assert.deepEqual(result.improvements, response.improvements);
+  response.dimensions[0].evidence = ['没有说过的原话'];
+  assert.throws(() => parseAgnes(JSON.stringify(response), fixture.input), /Unverified quotation/);
+  response.dimensions[0].evidence = [];
+  delete response.dimensions[0].analysis;
+  assert.throws(() => parseAgnes(JSON.stringify(response), fixture.input));
+});
+
+test('Agnes evidence references restore exact source segments and reject nonexistent references', () => {
+  const response = structuredClone(fixture.feedback);
+  const source = JSON.parse(buildAgnesMessages(fixture.input)[1].content).evidenceSegments;
+  response.dimensions[0].evidence = ['s1'];
+  assert.equal(parseAgnes(JSON.stringify(response), fixture.input).dimensions[0].evidence[0], source.s1);
+  response.dimensions[0].evidence = ['s999'];
+  assert.throws(() => parseAgnes(JSON.stringify(response), fixture.input), /Unverified quotation/);
+});

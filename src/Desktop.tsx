@@ -48,6 +48,7 @@ const navItems = [
   },
   { path: "/logic", label: "逻辑表达", icon: Stack, group: "工作台" },
   { path: "/library", label: "复述素材", icon: BookOpen, group: "工作台" },
+  { path: "/thinking", label: "思维框架", icon: Stack, group: "方法学习" },
   { path: "/plan", label: "21 天开口计划", icon: Path, group: "成长记录" },
   {
     path: "/history",
@@ -101,7 +102,7 @@ export function DesktopShell({
           </span>
         </div>
         <nav className="sidebar-nav" aria-label="桌面导航">
-          {["工作台", "成长记录"].map((group) => (
+          {["工作台", "方法学习", "成长记录"].map((group) => (
             <div className="nav-group" key={group}>
               <span className="nav-group-label">{group}</span>
               {navItems
