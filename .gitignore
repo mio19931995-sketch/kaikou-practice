@@ -10,4 +10,3 @@ playwright-report/
 *.tsbuildinfo
 release/
 .build-cache/
-.github-publish/

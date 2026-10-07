@@ -5,7 +5,7 @@ import {
   ArrowLeft,
   BookOpen,
   House,
-  Path,
+  Microphone,
   ClockCounterClockwise,
   ArrowUpRight,
   DownloadSimple,
@@ -18,10 +18,22 @@ let navigationGuard: (() => boolean) | undefined;
 export const setNavigationGuard = (guard?: () => boolean) => {
   navigationGuard = guard;
 };
+let approvedNavigation: string | undefined;
 export const go = (path: string) => {
+  if ((window.location.hash.slice(1) || "/") === path) return;
   if (navigationGuard && !navigationGuard()) return;
+  approvedNavigation = path;
   window.location.hash = path;
 };
+// Browser Back/Forward and direct hash changes need the same draft protection.
+export function allowRouteChange(path: string) {
+  if (approvedNavigation === path) {
+    approvedNavigation = undefined;
+    return true;
+  }
+  approvedNavigation = undefined;
+  return !navigationGuard || navigationGuard();
+}
 export function Brand({ small = false }: { small?: boolean }) {
   return (
     <span className={`brand ${small ? "small" : ""}`}>
@@ -29,7 +41,7 @@ export function Brand({ small = false }: { small?: boolean }) {
         <Waveform size={23} weight="bold" />
       </span>
       <span>
-        开口<span className="brand-caption">表达练习室</span>
+        开口练习<span className="brand-caption">KAIKOU PRACTICE</span>
       </span>
     </span>
   );
@@ -60,13 +72,14 @@ export function Header({
   );
 }
 export function BottomNav({ active }: { active: string }) {
+  if (active === "/plan") active = "/thinking";
   return (
     <nav className="bottom-nav" aria-label="主导航">
       {[
-        { path: "/", label: "首页", icon: House },
-        { path: "/plan", label: "训练", icon: Path },
-        { path: "/thinking", label: "思维框架", icon: BookOpen },
-        { path: "/history", label: "记录", icon: ClockCounterClockwise },
+        { path: "/", label: "今日练习", icon: House },
+        { path: "/practice/improv", label: "开口训练", icon: Microphone },
+        { path: "/thinking", label: "方法学习", icon: BookOpen },
+        { path: "/history", label: "我的练习", icon: ClockCounterClockwise },
       ].map(({ path, label, icon: Icon }) => (
         <a
           key={path}

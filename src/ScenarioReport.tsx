@@ -91,13 +91,30 @@ export function AttemptComparison({ session }: { session: Session }) {
     old.feedback.profileName === current.profileName;
   const dimensionsMatch =
     current.provider === "agnes" &&
-    current.dimensions.every((d) =>
-      old.feedback.dimensions.some(
-        (o) => o.id === d.id && o.standard === d.standard,
-      ),
+    current.dimensions.length > 0 &&
+    old.feedback.dimensions.length === current.dimensions.length &&
+    new Set(current.dimensions.map((d) => d.id)).size ===
+      current.dimensions.length &&
+    new Set(old.feedback.dimensions.map((d) => d.id)).size ===
+      old.feedback.dimensions.length &&
+    current.dimensions.every(
+      (d) =>
+        Boolean(d.id && d.standard) &&
+        old.feedback.dimensions.some(
+          (o) => o.id === d.id && o.standard === d.standard,
+        ),
     );
-  const canCompare =
-    same && (dimensionsMatch || Boolean(old.feedback.checks && current.checks));
+  const checksMatch =
+    current.provider === "jev" &&
+    Boolean(current.checks?.length) &&
+    current.checks?.length === old.feedback.checks?.length &&
+    new Set(current.checks?.map((c) => c.id)).size === current.checks?.length &&
+    new Set(old.feedback.checks?.map((c) => c.id)).size ===
+      old.feedback.checks?.length &&
+    current.checks?.every(
+      (c) => Boolean(c.id) && old.feedback.checks?.some((o) => o.id === c.id),
+    );
+  const canCompare = same && (dimensionsMatch || checksMatch);
   const statusLabels: Record<string, string> = {
     good: "已做到",
     partial: "需完善",

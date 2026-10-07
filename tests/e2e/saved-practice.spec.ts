@@ -41,5 +41,5 @@ test('saved audio can be transcribed, edited and receive AI feedback without los
   await expect(page.getByRole('button', { name: '重新生成 AI 点评' })).toBeVisible();
   await expect(page.locator('audio')).toBeVisible();
   await expect(page.locator('#saved-transcript')).toHaveValue(/具体例子/);
-  await expect(page.getByText('观点清晰，可以进一步补充例子。')).toBeVisible();
+  await expect(page.getByText('观点清晰，可以进一步补充例子。').first()).toBeVisible();
 });

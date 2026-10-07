@@ -4,68 +4,6 @@
   --ink-soft: #eaefee;
   --ink-mid: #acbeb9;
 }
-.thinking-page {
-  background: #f9f9f7;
-  color: #131313;
-}
-.thinking-page .button.primary,
-.thinking-page .path-node.is-practice {
-  background: var(--ink-green);
-  color: #fff;
-  box-shadow: none;
-}
-.thinking-page :is(.quick-card, .thinking-card, .path-unit, .lesson-group) {
-  background: #fff;
-  box-shadow: none;
-  border-color: #1e1e1d26;
-}
-.thinking-page
-  :is(.status-chip, .thinking-boundary, .thinking-notebook, .lesson-outcome) {
-  background: var(--ink-soft);
-  color: #2f5d50;
-}
-.thinking-page :is(.thinking-card-top > span, .thinking-eyebrow, .path-no) {
-  color: #58665f;
-}
-.thinking-page .thinking-card:hover {
-  transform: none;
-  border-color: #2f5d50;
-}
-.thinking-page
-  :is(
-    .thinking-filters button[aria-pressed="true"],
-    .lesson-tabs button[aria-selected="true"]
-  ) {
-  background: #eaefee;
-  color: #24483e;
-  border-color: #2f5d50;
-}
-.thinking-page .thinking-hero {
-  background: #f3f3f0;
-  background-image: none;
-}
-.thinking-page .thinking-hero-note {
-  background: #eaefee;
-  color: #2f5d50;
-}
-.thinking-page .speak-entry {
-  background: #eaefee;
-  border-color: #acbeb9;
-  color: #24483e;
-}
-.thinking-page a:focus-visible,
-.thinking-page button:focus-visible,
-.thinking-page summary:focus-visible {
-  outline-color: #2f5d50;
-}
-.thinking-page ::selection {
-  background: #acbeb9;
-  color: #131313;
-}
-.thinking-page input,
-.thinking-page textarea {
-  caret-color: #2f5d50;
-}
 .practice-workspace {
   --accent: #eaf0ec;
   --border: #739286;
@@ -301,4 +239,21 @@
   .analysis-progress {
     padding: 18px;
   }
+}
+
+.ai-recovery {
+  margin-block: 20px;
+  padding: 20px;
+  border: 1px solid var(--border, #acbeb9);
+  border-radius: 12px;
+}
+.ai-recovery p {
+  line-height: 1.8;
+}
+.ai-recovery .settings-section {
+  background: #f7f9f5;
+  color: #183b31;
+  padding: 20px;
+  border-radius: 12px;
+  margin-top: 20px;
 }

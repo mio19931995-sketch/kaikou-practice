@@ -1,28 +1,20 @@
+import { History } from "./History";
 import { ServiceSettings } from "./ServiceSettings";
 import { ThinkingLibrary } from "./ThinkingLibrary";
 import { SavedPractice } from "./SavedPractice";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
   BookOpen,
-  Briefcase,
-  ChatCircleDots,
   Check,
-  Clock,
   DownloadSimple,
-  Fire,
-  Flag,
-  GearSix,
   Microphone,
-  Path,
-  Play,
   Sparkle,
   Stack,
   Target,
   Trash,
   PencilSimple,
-  CaretRight,
   ShieldCheck,
 } from "@phosphor-icons/react";
 import {
@@ -31,9 +23,9 @@ import {
   Empty,
   ErrorNote,
   Header,
-  SectionTitle,
   AudioPlayer,
   go,
+  allowRouteChange,
 } from "./components";
 import { frameworks, lessons, materials, modeNames } from "./data";
 import { scenarios } from "./scenarios";
@@ -48,12 +40,21 @@ import { getStatus } from "./api";
 import type { Mode, ServiceStatus, Session } from "./types";
 import { Practice } from "./Practice";
 import { DesktopHome, DesktopShell, useDesktop } from "./Desktop";
+import { MethodsTabs, TrainingTabs } from "./Navigation";
 
 function useRoute() {
   const [route, setRoute] = useState(window.location.hash.slice(1) || "/");
+  const previousRoute = useRef(route);
   useEffect(() => {
     const handle = () => {
-      setRoute(window.location.hash.slice(1) || "/");
+      const next = window.location.hash.slice(1) || "/";
+      if (next === previousRoute.current) return;
+      if (!allowRouteChange(next)) {
+        window.history.replaceState(null, "", `#${previousRoute.current}`);
+        return;
+      }
+      previousRoute.current = next;
+      setRoute(next);
       window.scrollTo(0, 0);
     };
     window.addEventListener("hashchange", handle);
@@ -61,182 +62,22 @@ function useRoute() {
   }, []);
   return route;
 }
-function Home({ sessions }: { sessions: Session[] }) {
-  const todayCount = sessions.filter(
-    (s) => dateKey(new Date(s.createdAt)) === dateKey(),
-  ).length;
-  const done = completedDays(sessions);
-  const next = lessons.find((l) => !done.has(l.day)) || lessons[20];
-  return (
-    <>
-      <div className="home-content">
-        <header className="home-header">
-          <Brand />
-          <button
-            className="icon-button settings-button"
-            aria-label="设置"
-            onClick={() => go("/settings")}
-          >
-            <GearSix size={23} />
-          </button>
-        </header>
-        <section className="greeting">
-          <div className="greeting-label">
-            <span className="tiny-line" />
-            每天一点，表达更进一步
-          </div>
-          <h1>
-            把想法，
-            <br />
-            <span>说清楚。</span>
-          </h1>
-          <span className="greeting-stamp">
-            LET'S
-            <br />
-            SPEAK.
-          </span>
-          <p>不必一开口就完美。先从今天的一分钟开始。</p>
-        </section>
-        <div className="daily-progress">
-          <div>
-            <span className="progress-caption">今日练习</span>
-            <strong>
-              {todayCount}
-              <small> / 3 次</small>
-            </strong>
-          </div>
-          <div
-            className="progress-bars"
-            aria-label={`今日完成 ${todayCount} 次，目标 3 次`}
-          >
-            {Array.from({ length: 15 }, (_, i) => (
-              <i
-                key={i}
-                className={i < Math.min(todayCount, 3) * 5 ? "filled" : ""}
-              />
-            ))}
-          </div>
-          <span className="progress-spark">
-            <Sparkle size={28} weight="fill" />
-          </span>
-        </div>
-        <div className="primary-cards">
-          <button
-            className="mode-card improv-card"
-            onClick={() => go("/practice/improv")}
-          >
-            <span className="card-topline">
-              随想随说
-              <ArrowUpRight size={19} />
-            </span>
-            <h2>即兴表达</h2>
-            <p>让想法，自然说出口</p>
-            <div className="mode-art mic-art">
-              <Microphone size={60} weight="duotone" />
-            </div>
-            <span className="mode-foot">
-              60 秒小挑战
-              <ArrowRight size={17} />
-            </span>
-          </button>
-          <button className="mode-card logic-card" onClick={() => go("/logic")}>
-            <span className="card-topline">
-              有理有据
-              <ArrowUpRight size={19} />
-            </span>
-            <h2>逻辑表达</h2>
-            <p>给你的表达一点结构</p>
-            <div className="mode-art stack-art">
-              <Stack size={63} weight="duotone" />
-            </div>
-            <span className="mode-foot">
-              8 种表达框架
-              <ArrowRight size={17} />
-            </span>
-          </button>
-        </div>
-        <section className="retell-section">
-          <SectionTitle
-            title="读懂，再说出来"
-            link="全部素材"
-            onClick={() => go("/library")}
-          />
-          <div className="category-grid">
-            {[
-              { title: "职场表达", sub: "把事情说清楚", icon: Briefcase },
-              { title: "概念解释", sub: "用自己的话理解", icon: BookOpen },
-              {
-                title: "社交沟通",
-                sub: "让彼此更懂彼此",
-                icon: ChatCircleDots,
-              },
-              { title: "自媒体", sub: "让故事被记住", icon: Play },
-            ].map((c) => (
-              <button
-                key={c.title}
-                onClick={() =>
-                  go(`/library?category=${encodeURIComponent(c.title)}`)
-                }
-              >
-                <span className="category-icon">
-                  <c.icon size={23} />
-                </span>
-                <span>
-                  <strong>{c.title}</strong>
-                  <small>{c.sub}</small>
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-        <button className="course-banner" onClick={() => go("/plan")}>
-          <span className="course-copy">
-            <span className="course-eyebrow">每天一个小进步</span>
-            <strong>
-              21 天开口计划
-              <ArrowUpRight size={21} />
-            </strong>
-            <small>
-              {done.size
-                ? `已经完成 ${done.size} 天，继续保持`
-                : "从敢说，到说得清楚"}
-            </small>
-          </span>
-          <span className="course-art">
-            <Path size={64} weight="duotone" />
-            <i>21</i>
-          </span>
-        </button>
-        <section className="today-section">
-          <SectionTitle title="今天，试试这个" />
-          <button
-            className="today-task"
-            onClick={() => go(`/lesson/${next.day}`)}
-          >
-            <span className="task-day">
-              DAY<strong>{String(next.day).padStart(2, "0")}</strong>
-            </span>
-            <span>
-              <strong>{next.title}</strong>
-              <small>{next.goal}</small>
-            </span>
-            <ArrowRight size={21} />
-          </button>
-        </section>
-        <div className="home-note">
-          <span />
-          表达是一种能力，也是一种练习。
-          <span />
-        </div>
-      </div>
-      <BottomNav active="/" />
-    </>
+function Logic({
+  structures = false,
+  initialFramework,
+}: {
+  structures?: boolean;
+  initialFramework?: string | null;
+}) {
+  const [tab, setTab] = useState<"scene" | "library">(
+    structures ? "library" : "scene",
   );
-}
-function Logic() {
-  const [tab, setTab] = useState<"scene" | "library">("scene");
   const [sceneId, setSceneId] = useState("update");
-  const [selected, setSelected] = useState("SCQA");
+  const [selected, setSelected] = useState(
+    frameworks.some((frame) => frame.id === initialFramework)
+      ? initialFramework!
+      : "SCQA",
+  );
   const scene = scenarios.find((s) => s.id === sceneId)!;
   const activeId =
     tab === "scene"
@@ -247,12 +88,22 @@ function Logic() {
   const frame = frameworks.find((f) => f.id === activeId)!;
   return (
     <>
-      <Header title="逻辑表达" />
+      <Header
+        title={structures ? "表达结构" : "场景表达"}
+        back={structures ? "/thinking" : "/"}
+      />
       <main className="page-content logic-content scene-content">
         <div className="page-intro">
           <span className="eyebrow">把话说得有条理</span>
-          <h1>这一次，你想说什么？</h1>
+          <h1>
+            {structures ? "给表达一个清楚的顺序" : "这一次，你想说什么？"}
+          </h1>
           <p>从真实场景出发，找到适合这次表达的顺序。</p>
+          {structures ? (
+            <MethodsTabs active="/structures" />
+          ) : (
+            <TrainingTabs active="/logic" />
+          )}
           <div className="scene-tabs" role="group" aria-label="浏览方式">
             <button
               aria-pressed={tab === "scene"}
@@ -430,6 +281,7 @@ function Library({ search }: { search: URLSearchParams }) {
           </h1>
           <p>读一段短文，再用一分钟说清它的意思。</p>
         </div>
+        <TrainingTabs active="/library" />
         <div className="filter-chips" aria-label="素材分类">
           {["全部", ...new Set(materials.map((m) => m.category))].map((c) => (
             <button
@@ -468,70 +320,72 @@ function Library({ search }: { search: URLSearchParams }) {
 }
 function Plan({ sessions }: { sessions: Session[] }) {
   const done = completedDays(sessions);
-  const current = lessons.find((l) => !done.has(l.day))?.day || 21;
+  const next = lessons.find((lesson) => !done.has(lesson.day)) || lessons[20];
   return (
     <>
-      <Header title="21 天开口计划" />
-      <main className="page-content plan-content">
-        <div className="plan-head">
-          <span className="eyebrow">小步前进，也是在前进</span>
-          <h1>
-            让表达成为
-            <br />
-            你的日常。
-          </h1>
-          <div className="plan-stats">
-            <span>
-              <strong>{done.size}</strong> / 21 天已完成
-            </span>
-            <span>
-              <Fire size={17} weight="fill" />
-              连续练习 {streak(sessions)} 天
-            </span>
-          </div>
-          <div className="progress-track">
-            <i style={{ width: `${(done.size / 21) * 100}%` }} />
-          </div>
+      <Header title="21 天开口计划" back="/thinking" />
+      <main className="page-content plan-content redesigned-plan">
+        <div className="page-intro">
+          <h1>让练习持续，也让进步真实</h1>
+          <p>每天一个小任务，练完再往前走</p>
         </div>
-        <div className="journey">
-          {lessons.map((lesson, i) => (
-            <div
-              key={lesson.day}
-              className={`journey-item ${i % 2 ? "right" : "left"} ${lesson.day === current ? "current" : ""} ${done.has(lesson.day) ? "complete" : ""}`}
+        <MethodsTabs active="/plan" />
+        <section className="plan-hero">
+          <div>
+            <span>第 {next.day} 天 / 下一次练习</span>
+            <h2>{next.title}</h2>
+            <p>{next.goal}</p>
+            <button
+              className="button primary"
+              onClick={() => go(`/lesson/${next.day}`)}
             >
-              {i % 7 === 0 && (
-                <div className="week-label">
-                  第 {Math.floor(i / 7) + 1} 周 ·{" "}
-                  {
-                    ["找到开口的感觉", "让表达更有结构", "把练习带进生活"][
-                      Math.floor(i / 7)
-                    ]
-                  }
+              开始第 {next.day} 天 <ArrowRight size={18} />
+            </button>
+          </div>
+          <aside className="plan-stats">
+            <strong>{done.size} / 21</strong>
+            <span>天已保存练习</span>
+            <p>连续练习 {streak(sessions)} 天</p>
+            <small>以已保存的练习记录为准，不代表能力评分</small>
+          </aside>
+        </section>
+        <div className="journey">
+          {[0, 1, 2].map((week) => (
+            <section className="plan-week" key={week}>
+              <div className="week-label">
+                第 {week + 1} 周 ·{" "}
+                {["找到开口的感觉", "让表达更有结构", "把练习带进生活"][week]}
+              </div>
+              {lessons.slice(week * 7, week * 7 + 7).map((lesson) => (
+                <div
+                  key={lesson.day}
+                  className={`journey-item ${lesson.day === next.day ? "current" : ""} ${done.has(lesson.day) ? "complete" : ""}`}
+                >
+                  <button
+                    className="journey-node"
+                    onClick={() => go(`/lesson/${lesson.day}`)}
+                    aria-label={`第 ${lesson.day} 天 ${lesson.title}${done.has(lesson.day) ? "，已完成" : ""}`}
+                  >
+                    <span className="plan-day">
+                      {done.has(lesson.day) ? (
+                        <Check size={20} />
+                      ) : (
+                        String(lesson.day).padStart(2, "0")
+                      )}
+                    </span>
+                    <span>
+                      <strong>{lesson.title}</strong>
+                      <small>{lesson.goal}</small>
+                    </span>
+                    <ArrowRight size={16} />
+                  </button>
                 </div>
-              )}
-              <button
-                className="journey-node"
-                onClick={() => go(`/lesson/${lesson.day}`)}
-                aria-label={`第 ${lesson.day} 天 ${lesson.title}${done.has(lesson.day) ? "，已完成" : ""}`}
-              >
-                {done.has(lesson.day) ? (
-                  <Check size={26} weight="bold" />
-                ) : lesson.day === 21 ? (
-                  <Flag size={27} />
-                ) : (
-                  lesson.day
-                )}
-              </button>
-              <span className="journey-caption">
-                Day {lesson.day}
-                <strong>{lesson.title}</strong>
-                {lesson.day === current && <small>下一次练习</small>}
-              </span>
-            </div>
+              ))}
+            </section>
           ))}
         </div>
         <p className="center-note">
-          可以按顺序练，也可以选择今天感兴趣的主题。
+          可以按顺序练，也可以选择今天感兴趣的主题。后续课程始终可以浏览，不用被连续天数绑住。
         </p>
       </main>
       <BottomNav active="/plan" />
@@ -617,111 +471,6 @@ function Lesson({ day, sessions }: { day: number; sessions: Session[] }) {
           <ArrowRight size={20} />
         </button>
       </div>
-    </>
-  );
-}
-function History({ sessions, error }: { sessions: Session[]; error: string }) {
-  const [filter, setFilter] = useState("all");
-  const list = sessions.filter((s) => filter === "all" || s.mode === filter);
-  return (
-    <>
-      <Header title="我的练习" />
-      <main className="page-content history-content">
-        <div className="page-intro">
-          <span className="eyebrow">每一次开口，都算数</span>
-          <h1>看见自己的进步。</h1>
-        </div>
-        <div className="history-stats">
-          <div>
-            <strong>{sessions.length}</strong>
-            <span>累计练习</span>
-          </div>
-          <div>
-            <strong>
-              {Math.round(sessions.reduce((n, s) => n + s.duration, 0) / 60)}
-            </strong>
-            <span>开口分钟</span>
-          </div>
-          <div>
-            <strong>{streak(sessions)}</strong>
-            <span>连续天数</span>
-          </div>
-        </div>
-        <div className="filter-chips">
-          {[["all", "全部"], ...Object.entries(modeNames)].map(
-            ([value, label]) => (
-              <button
-                key={value}
-                className={filter === value ? "selected" : ""}
-                aria-pressed={filter === value}
-                onClick={() => setFilter(value)}
-              >
-                {label}
-              </button>
-            ),
-          )}
-        </div>
-        {error && <ErrorNote>{error}</ErrorNote>}
-        {list.length ? (
-          <div className="history-list">
-            {list.map((s) => (
-              <button
-                className="history-card"
-                key={s.id}
-                onClick={() => go(`/record/${s.id}`)}
-              >
-                <div className="history-card-top">
-                  <span className="tag">{modeNames[s.mode]}</span>
-                  <time>
-                    {new Date(s.createdAt).toLocaleDateString("zh-CN", {
-                      month: "numeric",
-                      day: "numeric",
-                    })}{" "}
-                    {new Date(s.createdAt).toLocaleTimeString("zh-CN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </time>
-                </div>
-                <h2>{s.topic}</h2>
-                <div className="history-card-bottom">
-                  <span>
-                    <Clock size={15} />
-                    {s.duration ? `${s.duration} 秒` : "文字练习"}
-                  </span>
-                  <span>
-                    {s.feedback?.source === "ai"
-                      ? "AI 点评"
-                      : s.feedback
-                        ? "基础反馈"
-                        : "打开记录 · 生成点评"}
-                    <CaretRight size={16} />
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <Empty
-            title={sessions.length ? "还没有这类练习" : "第一条记录，等你开口"}
-            text="完成一次练习并保存，就能在这里回听和回顾。"
-          >
-            <button
-              className="button primary"
-              onClick={() => go("/practice/improv")}
-            >
-              开始一次练习
-              <ArrowRight size={19} />
-            </button>
-          </Empty>
-        )}
-        <p className="center-note">
-          {window.desktopApp
-            ? "记录保存在当前电脑中，请及时下载重要录音。"
-            : "记录保存在当前浏览器中，请及时下载重要录音。"}
-        </p>
-      </main>
-      <BottomNav active="/history" />
     </>
   );
 }
@@ -842,11 +591,11 @@ function Settings({
   };
   return (
     <>
-      <Header title="设置与说明" />
+      <Header title="设置与服务状态" />
       <main className="page-content">
         <div className="page-intro">
           <Brand />
-          <h1>安心地练习。</h1>
+          <h1>安心地练习，清楚地掌握状态</h1>
           <p>你的练习，由你掌握。</p>
         </div>
         <section className="settings-section">
@@ -913,7 +662,31 @@ function Settings({
           </button>
           <small>录音可在每条历史记录中单独下载。</small>
         </section>
-        {window.desktopApp && <ServiceSettings refresh={refresh} />}
+        {window.desktopApp ? (
+          <ServiceSettings refresh={refresh} />
+        ) : (
+          <section className="settings-section">
+            <h2>
+              <BookOpen size={21} />
+              网页版服务配置
+            </h2>
+            <p>
+              网页版使用本地服务端配置。请按项目 README 在 .env 中选择
+              Agnes、Jev 或兼容模型，配置后重启服务；AI 点评和语音转写分别配置。
+            </p>
+            <p>
+              这里的「重新检查服务」只刷新可用状态，不会发起付费模型测试。切换模型后，两次不同标准的判断不会直接比较。
+            </p>
+            <a
+              className="text-button"
+              href="https://github.com/mio19931995-sketch/kaikou-practice#源码运行"
+              target="_blank"
+              rel="noreferrer"
+            >
+              查看源码运行与配置说明 ↗
+            </a>
+          </section>
+        )}
         <section className="settings-section">
           <h2>
             <BookOpen size={21} />
@@ -984,7 +757,7 @@ export default function App() {
       window.clearInterval(timer);
     };
   }, [refreshStatus]);
-  const dark = path.startsWith("/practice") || path === "/logic";
+  const dark = false;
   useEffect(() => {
     document
       .querySelector('meta[name="theme-color"]')
@@ -992,15 +765,27 @@ export default function App() {
   }, [dark]);
   let page;
   if (path === "/")
-    page = desktop ? (
-      <DesktopHome sessions={sessions} />
-    ) : (
-      <Home sessions={sessions} />
+    page = (
+      <>
+        <DesktopHome sessions={sessions} error={storageError} />
+        <BottomNav active="/" />
+      </>
     );
-  else if (path === "/logic") page = <Logic />;
+  else if (path === "/logic" || path === "/structures")
+    page = (
+      <Logic
+        key={route}
+        initialFramework={search.get("framework")}
+        structures={path === "/structures" || search.get("tab") === "library"}
+      />
+    );
   else if (path === "/thinking")
     page = (
-      <ThinkingLibrary modelId={search.get("model")} sessions={sessions} />
+      <ThinkingLibrary
+        modelId={search.get("model")}
+        sessions={sessions}
+        navigation={<MethodsTabs active="/thinking" />}
+      />
     );
   else if (path === "/library") page = <Library key={route} search={search} />;
   else if (path === "/plan") page = <Plan sessions={sessions} />;
@@ -1055,11 +840,10 @@ export default function App() {
       {page}
     </div>
   );
-  return desktop ? (
-    <DesktopShell path={path} sessions={sessions}>
+  // Keep the same tree while resizing so unsaved text and recording state survive.
+  return (
+    <DesktopShell path={path} sessions={sessions} desktop={desktop}>
       {content}
     </DesktopShell>
-  ) : (
-    content
   );
 }

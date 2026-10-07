@@ -72,7 +72,7 @@ export function ThinkingPractice({ id }: { id: string }) {
         如果只写了“加强沟通”“多考虑一下”，还需要补上具体对象、依据和动作。此处提供自查依据，不会自动判定你已掌握。
       </p>
       <p className="practice-note">
-        写完之后，到本课末尾「用这个框架说 60 秒」把它说出来。
+        写完之后，用本课的「用这个框架说 60 秒」把它说出来。
       </p>
     </section>
   );

@@ -1,8 +1,8 @@
 import { sceneTemplates } from "./scenarios";
 export const modeNames = {
   improv: "即兴表达",
-  logic: "逻辑表达",
-  retell: "复述表达",
+  logic: "场景表达",
+  retell: "复述练习",
 };
 export const topics = [
   "工作稳定但越来越提不起劲，该坚持还是改变？",

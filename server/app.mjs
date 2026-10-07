@@ -69,8 +69,16 @@ export function createApp({
     if (!parsed.success)
       return res.status(400).json({ error: parsed.error.issues[0].message });
     const input = parsed.data;
-    if (!env.AI_API_KEY || !env.AI_BASE_URL || !env.AI_MODEL)
+    if (!env.AI_API_KEY || !env.AI_BASE_URL || !env.AI_MODEL) {
+      if (req.get("X-Kaikou-Require-AI") === "1")
+        return res
+          .status(503)
+          .json({
+            error:
+              "AI 服务尚未配置完整，请连接模型后重试。文字和录音已保留，本次不会改用基础反馈。",
+          });
       return res.json(basicFeedback(input));
+    }
     try {
       // DeepSeek's current API defaults to thinking mode. For a short, structured
       // coaching response, explicitly disable it and request JSON output.

@@ -1,5 +1,6 @@
-import { PracticeNext, AnalysisProgress } from "./PracticeLoop";
-import { AttemptComparison } from "./ScenarioReport";
+import { AIRecovery } from "./AIRecovery";
+import { FeedbackReview, AnalysisProgress } from "./PracticeLoop";
+import "./practice-redesign.css";
 import { RuleSelector } from "./RuleSelector";
 import type { RuleProfile } from "./types";
 import { useEffect, useRef, useState } from "react";
@@ -7,7 +8,6 @@ import {
   ArrowRight,
   ArrowClockwise,
   CheckCircle,
-  Clock,
   Microphone,
   PencilSimple,
   Shuffle,
@@ -21,7 +21,6 @@ import {
   AudioPlayer,
   ErrorNote,
   Header,
-  Report,
   WaveformCanvas,
   go,
   setNavigationGuard,
@@ -123,11 +122,15 @@ export function Practice({
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [working, setWorking] = useState("");
+  const [aiCheckRequest, setAiCheckRequest] = useState(0);
   const [transcriptionState, setTranscriptionState] = useState<
     "idle" | "working" | "done" | "error"
   >("idle");
   const [feedback, setFeedback] = useState<Feedback>();
   const [saved, setSaved] = useState(false);
+  const [analysisSeconds, setAnalysisSeconds] = useState<number>();
+  const [previousAttempt, setPreviousAttempt] =
+    useState<Session["previousAttempt"]>();
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
   const recorder = useRecorder(targetDuration);
   const autoTranscribed = useRef(false);
@@ -227,6 +230,8 @@ export function Practice({
     setError("");
     setSaved(false);
     setTranscriptionState("idle");
+    setPreviousAttempt(undefined);
+    setAnalysisSeconds(undefined);
     setSessionId(crypto.randomUUID());
     autoTranscribed.current = false;
   }
@@ -248,12 +253,14 @@ export function Practice({
       id: sessionId,
       retryOf: retrySession?.id,
       practiceFocus,
-      previousAttempt: retrySession?.feedback
-        ? {
-            transcript: retrySession.transcript,
-            feedback: retrySession.feedback,
-          }
-        : undefined,
+      previousAttempt:
+        previousAttempt ||
+        (retrySession?.feedback
+          ? {
+              transcript: retrySession.transcript,
+              feedback: retrySession.feedback,
+            }
+          : undefined),
       thinkingModelId: thinking?.id,
       targetDuration,
       preparationDraft: draft || undefined,
@@ -281,7 +288,7 @@ export function Practice({
     setSaved(true);
     await onSaved();
   }
-  async function submit() {
+  async function submit(requireAI: boolean) {
     if (working) return;
     if (text.trim().length < 5) {
       setError(
@@ -292,11 +299,13 @@ export function Practice({
       document.getElementById("transcript")?.focus();
       return;
     }
-    setWorking(status.ai ? "正在阅读你的表达，生成点评…" : "正在整理本次练习…");
+    const startedAt = Date.now();
+    setAnalysisSeconds(undefined);
+    setWorking(requireAI ? "正在阅读你的表达，生成点评…" : "正在整理本次练习…");
     setError("");
     try {
       await persist();
-      const result = await analyze(session());
+      const result = await analyze(session(), requireAI);
       if (!active.current) return;
       setSaved(false);
       setFeedback(result);
@@ -310,7 +319,10 @@ export function Practice({
     } catch (e) {
       if (active.current) setError((e as Error).message);
     } finally {
-      if (active.current) setWorking("");
+      if (active.current) {
+        setWorking("");
+        setAnalysisSeconds(Math.round((Date.now() - startedAt) / 1000));
+      }
     }
   }
   async function saveOnly() {
@@ -338,6 +350,8 @@ export function Practice({
       const result = await transcribe(blob);
       if (active.current) {
         setText(result);
+        setFeedback(undefined);
+        setSaved(false);
         setTranscriptionState(result.trim() ? "done" : "error");
         if (!result.trim()) setError("没有识别到语音，请回听录音或手动填写。");
       }
@@ -354,18 +368,82 @@ export function Practice({
     Boolean(working) ||
     recorder.phase === "requesting" ||
     recorder.phase === "processing";
+  const structureSteps =
+    mode === "logic"
+      ? framework.steps
+      : mode === "retell"
+        ? ["一句话概括主题", "保留关键理由与事实", "用自己的话重新组织"]
+        : ["先说观点", "给出理由和例子", "用一句话收束"];
+  const openTextPractice = (useDraft = false) => {
+    setText(useDraft ? draft : "");
+    setView("review");
+    window.scrollTo(0, 0);
+  };
+  const title =
+    view === "setup"
+      ? "给想法一个清楚的开头"
+      : view === "session"
+        ? "专心表达，放心继续"
+        : view === "review"
+          ? "先确认，这是你想说的话"
+          : "把这一次，变成下一次的进步";
   return (
-    <>
+    <div className={`practice-redesign practice-screen-${view}`}>
       <Header
         title={view === "report" ? "练习反馈" : modeNames[mode]}
         onBack={back}
         right={
           <span className="header-pill">
-            {lesson ? `DAY ${lesson.day}` : `${targetDuration}s`}
+            {lesson ? `DAY ${lesson.day}` : `${targetDuration} 秒`}
           </span>
         }
       />
-      <div className="practice-workspace">
+      <main className="practice-workspace">
+        <header className="practice-masthead">
+          <div>
+            <h1>{title}</h1>
+            <p>
+              {mode === "logic" ? "场景表达" : modeNames[mode]}
+              <span>/</span>
+              {retrySession
+                ? "同题再练"
+                : view === "setup"
+                  ? "准备这一轮"
+                  : view === "session"
+                    ? "正在开口"
+                    : view === "review"
+                      ? "校对表达内容"
+                      : "练习复盘"}
+              <span>/</span>
+              {targetDuration} 秒
+            </p>
+          </div>
+          <span className="practice-local-note">
+            <CheckCircle size={15} /> 练习与录音保存在本机
+          </span>
+        </header>
+        {view === "setup" && (
+          <nav className="practice-mode-tabs" aria-label="练习类型">
+            {(
+              [
+                ["improv", "即兴表达", "/practice/improv"],
+                ["logic", "场景表达", "/logic"],
+                ["retell", "复述练习", "/library"],
+              ] as const
+            ).map(([id, name, path]) => (
+              <button
+                key={id}
+                className={mode === id ? "is-active" : ""}
+                aria-current={mode === id ? "page" : undefined}
+                onClick={() => {
+                  if (mode !== id) go(path);
+                }}
+              >
+                {name}
+              </button>
+            ))}
+          </nav>
+        )}
         <div className="practice-stepper" aria-label="练习进度">
           {["准备", "开口表达", "回顾内容", "练习反馈"].map((label, i) => {
             const current = ["setup", "session", "review", "report"].indexOf(
@@ -377,6 +455,7 @@ export function Practice({
                 className={
                   i === current ? "current" : i < current ? "complete" : ""
                 }
+                aria-current={i === current ? "step" : undefined}
               >
                 <i>{i < current ? <CheckCircle size={17} /> : i + 1}</i>
                 {label}
@@ -384,19 +463,23 @@ export function Practice({
             );
           })}
         </div>
-        <div className="practice-columns">
-          <main className={`page-content practice-content view-${view}`}>
-            {retrySession && view !== "report" && (
-              <section className="practice-focus">
-                <h3>同一道题，再试一次</h3>
-                <p>{practiceFocus || "保留已有优点，把想法说得更清楚。"}</p>
-                <small>题目和点评标准保持不变，上次练习不会被覆盖。</small>
-              </section>
-            )}
-            {view === "setup" && (
-              <>
+        {retrySession && view !== "report" && (
+          <section className="practice-focus">
+            <h3>同一道题，再试一次</h3>
+            <p>{practiceFocus || "保留已有优点，把想法说得更清楚。"}</p>
+            <small>题目和点评标准保持不变，上次练习不会被覆盖。</small>
+          </section>
+        )}
+        {view === "setup" && (
+          <>
+            <div className="practice-setup-grid">
+              <section className="practice-topic-panel">
                 {mode === "improv" && !lesson && !retrySession && (
-                  <div className="segmented" role="group" aria-label="出题方式">
+                  <div
+                    className="segmented topic-kind"
+                    role="group"
+                    aria-label="出题方式"
+                  >
                     <button
                       className={kind === "question" ? "selected" : ""}
                       aria-pressed={kind === "question"}
@@ -413,21 +496,20 @@ export function Practice({
                     </button>
                   </div>
                 )}
-                <div className="practice-heading">
-                  <span className="eyebrow">
-                    {mode === "retell"
-                      ? "先读一遍，再用自己的话说出来"
-                      : mode === "logic"
-                        ? `${framework.name} · ${framework.subtitle}`
-                        : "没有标准答案，你的想法就很好"}
+                <div className="practice-topic-tags">
+                  <span>
+                    {scene?.category ||
+                      (mode === "retell"
+                        ? material.category
+                        : mode === "logic"
+                          ? "结构练习"
+                          : "自由表达")}
                   </span>
-                  <h1>
-                    {mode === "retell"
-                      ? "读懂它，再讲给我听。"
-                      : mode === "logic"
-                        ? "有结构，才更清楚。"
-                        : "给灵感，一点声音。"}
-                  </h1>
+                  {mode === "logic" && (
+                    <span>
+                      {framework.name} · {framework.subtitle}
+                    </span>
+                  )}
                 </div>
                 {mode === "improv" && kind === "words" ? (
                   <>
@@ -466,7 +548,7 @@ export function Practice({
                         </select>
                       </label>
                     </div>
-                    <p className="muted small-text">
+                    <p className="topic-instruction">
                       把这些词连成一个观点或故事，怎么讲都可以。
                     </p>
                   </>
@@ -474,60 +556,90 @@ export function Practice({
                   <article
                     className={`question-card ${mode === "retell" ? "reading-card" : ""}`}
                   >
-                    <span className="question-label">
-                      {mode === "retell"
-                        ? material.category
-                        : scene
-                          ? `${scene.category} · ${scene.title}`
-                          : "这一题，聊聊"}
-                    </span>
                     <h2>{question}</h2>
-                    {mode === "retell" && <p>{material.text}</p>}
-                    <div className="question-card-bottom">
-                      <span>
-                        <Clock size={15} />
-                        {mode === "retell"
-                          ? "建议阅读 30 秒"
-                          : `表达时间 ${targetDuration} 秒`}
-                      </span>
-                      {mode !== "retell" &&
-                        !lesson &&
-                        !thinking &&
-                        !retrySession && (
-                          <button
-                            className="text-button"
-                            onClick={() =>
-                              setTopic(pick(practiceTopics, topic))
-                            }
-                          >
-                            <Shuffle size={17} />
-                            换一题
-                          </button>
-                        )}
-                    </div>
+                    {mode === "retell" ? (
+                      <p>{material.text}</p>
+                    ) : (
+                      <p className="topic-instruction">
+                        {mode === "logic"
+                          ? framework.description
+                          : "没有标准答案。说出你的观点，再用一个真实的例子让人听懂。"}
+                      </p>
+                    )}
                   </article>
                 )}
-                {mode === "improv" && kind === "words" && (
-                  <button
-                    className="button secondary full"
-                    onClick={() => shuffleWords()}
-                  >
-                    <Shuffle size={18} />
-                    换一组词
-                  </button>
-                )}
-                {mode === "logic" && (
+                <section className="practice-structure">
+                  <h3>
+                    {mode === "retell"
+                      ? "读懂之后，可以这样复述"
+                      : "可以这样组织"}
+                  </h3>
                   <div className="mini-steps">
-                    {framework.steps.map((s, i) => (
-                      <span key={s}>
-                        <i>{i + 1}</i>
-                        {s}
+                    {structureSteps.map((step, i) => (
+                      <span key={step}>
+                        <i>{String(i + 1).padStart(2, "0")}</i>
+                        {step}
                       </span>
                     ))}
                   </div>
-                )}
+                </section>
+                <div className="preparation-draft">
+                  <details>
+                    <summary>先写提纲，再开口（可选）</summary>
+                    <p>
+                      只记关键词，不用写完整句子。提纲与转写分开，录音点评只使用实际转写。
+                    </p>
+                    {thinking && (
+                      <p>{thinkingPractice[thinking.id].template.join("\n")}</p>
+                    )}
+                  </details>
+                  <label htmlFor="preparation-draft">我的表达提纲</label>
+                  <textarea
+                    id="preparation-draft"
+                    value={draft}
+                    maxLength={3000}
+                    placeholder="只记关键词，不用写完整句子……"
+                    onChange={(e) => setDraft(e.target.value)}
+                    rows={3}
+                  />
+                  {draft && (
+                    <button
+                      className="text-button draft-to-text"
+                      onClick={() => openTextPractice(true)}
+                    >
+                      <PencilSimple size={15} />
+                      用这份提纲进行文字练习
+                    </button>
+                  )}
+                </div>
+              </section>
+              <aside className="practice-setup-panel" aria-label="这一轮怎么练">
+                <h2>这一轮怎么练</h2>
+                <div
+                  className="practice-input-switch"
+                  role="group"
+                  aria-label="表达方式"
+                >
+                  <button
+                    className="is-active"
+                    aria-pressed="true"
+                    disabled={busy}
+                  >
+                    <Microphone size={17} weight="fill" />
+                    录音表达
+                  </button>
+                  <button
+                    aria-label="也可以用文字练习"
+                    aria-pressed="false"
+                    disabled={busy}
+                    onClick={() => openTextPractice()}
+                  >
+                    <PencilSimple size={17} />
+                    文字输入
+                  </button>
+                </div>
                 <section className="prep-section duration-section">
-                  <h2>这次想说多久？</h2>
+                  <h3>表达时长</h3>
                   <div className="prep-options" aria-label="表达时长">
                     {[30, 60, 90, 180].map((n) => (
                       <button
@@ -542,30 +654,12 @@ export function Practice({
                     ))}
                   </div>
                   <p className="service-note">
-                    可以提前结束；到所选时长自动收尾。长回答建议选 90 或 180
-                    秒。
+                    可以提前结束，到所选时长自动收尾
                   </p>
                 </section>
-                <details className="preparation-draft">
-                  <summary>先写提纲，再开口（可选）</summary>
-                  {thinking && (
-                    <p>{thinkingPractice[thinking.id].template.join("\n")}</p>
-                  )}
-                  <label htmlFor="preparation-draft">我的表达提纲</label>
-                  <textarea
-                    id="preparation-draft"
-                    value={draft}
-                    maxLength={3000}
-                    placeholder="我想表达的重点……\n用哪个例子说明……\n最后想让对方记住……"
-                    onChange={(e) => setDraft(e.target.value)}
-                  />
-                  <small>
-                    提纲与转写分开。录音点评只使用实际转写；保存练习时一并保存提纲。
-                  </small>
-                </details>
                 <section className="prep-section">
-                  <h2>留多少时间准备？</h2>
-                  <div className="prep-options">
+                  <h3>准备时间</h3>
+                  <div className="prep-options" aria-label="准备时间">
                     {[3, 10, 30].map((n) => (
                       <button
                         key={n}
@@ -575,13 +669,17 @@ export function Practice({
                       >
                         {n}
                         <small>秒</small>
-                        {prepTime === n && (
-                          <CheckCircle size={17} weight="fill" />
-                        )}
                       </button>
                     ))}
                   </div>
                 </section>
+                <div className="practice-mic-note">
+                  <Microphone size={21} />
+                  <div>
+                    <strong>使用系统默认麦克风</strong>
+                    <p>开始时会请求麦克风权限，录音后可回听</p>
+                  </div>
+                </div>
                 {speechSupported() && !status.asr && (
                   <label className="speech-switch">
                     <input
@@ -603,7 +701,7 @@ export function Practice({
                   </p>
                 )}
                 {!status.ai && (
-                  <p className="service-note">
+                  <p className="service-note service-availability">
                     <Sparkle size={16} />
                     {status.reachable
                       ? "AI 点评尚未启用，本次提供基础反馈。"
@@ -616,378 +714,367 @@ export function Practice({
                     disabled={busy}
                     onClick={start}
                   >
-                    <Microphone size={21} />
+                    <Microphone size={20} />
                     {recorder.phase === "requesting"
                       ? "正在打开麦克风…"
                       : mode === "retell"
                         ? "读完了，开始复述"
                         : "开始表达"}
-                  </button>
-                  <button
-                    className="text-button manual-button"
-                    disabled={busy}
-                    onClick={() => {
-                      setText(draft);
-                      setView("review");
-                    }}
-                  >
-                    <PencilSimple size={16} />
-                    {draft ? "用这份提纲进行文字练习" : "也可以用文字练习"}
+                    <ArrowRight size={19} />
                   </button>
                 </div>
-              </>
-            )}
-            {view === "session" && (
-              <>
-                <div className="session-topic">
-                  <span className="eyebrow">
-                    {countdown !== null
-                      ? "先想想，你想说什么"
-                      : recorder.phase === "processing"
-                        ? "正在整理录音"
-                        : "慢慢说，我在听"}
-                  </span>
-                  <h1>{question}</h1>
-                  {mode === "logic" && <p>{framework.steps.join(" → ")}</p>}
-                </div>
-                <div className="record-stage">
-                  {countdown !== null ? (
-                    <>
-                      <span className="countdown-circle" key={countdown}>
-                        {countdown}
-                      </span>
-                      <p>深呼吸，准备开口</p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="record-timer">
-                        <span>{clockText(recorder.seconds)}</span>
-                        <small>/ {clockText(targetDuration)}</small>
-                      </div>
-                      <WaveformCanvas
-                        analyser={recorder.analyser}
-                        active={recorder.phase === "recording"}
-                      />
-                      <p className="live-transcript" aria-live="off">
-                        {recorder.transcript ||
-                          "说出第一个想法，就已经是一个开始。"}
-                      </p>
-                      {recorder.phase === "recording" &&
-                        targetDuration - recorder.seconds <= 5 && (
-                          <p role="status">
-                            还有 {targetDuration - recorder.seconds}{" "}
-                            秒，可以用一句话收束。
-                          </p>
-                        )}
-                    </>
-                  )}
-                </div>
-                {draft && (
-                  <details className="preparation-draft">
-                    <summary>需要提示时，看一眼提纲</summary>
-                    <p>{draft}</p>
-                  </details>
-                )}
-                {recorder.phase === "recording" && (
-                  <div className="record-action">
-                    <button
-                      className="stop-record"
-                      aria-label="结束录音"
-                      onClick={recorder.stop}
-                    >
-                      <Square size={27} weight="fill" />
-                    </button>
-                    <span>结束录音</span>
-                  </div>
-                )}
-                {recorder.phase === "processing" && (
-                  <div className="processing-label" role="status">
-                    正在整理你的录音…
-                  </div>
-                )}
-                {recorder.phase === "idle" && (
-                  <button
-                    className="button secondary full"
-                    onClick={() => setView("setup")}
-                  >
-                    返回准备页面
-                  </button>
-                )}
-              </>
-            )}
-            {view === "review" && (
-              <>
-                <div className="practice-heading">
-                  <span className="eyebrow">
-                    {recorder.blob ? "一次开口，已经完成" : "把想说的话写下来"}
-                  </span>
-                  <h1>
-                    {recorder.blob ? "听听，刚才的自己。" : "先把想法写清楚。"}
-                  </h1>
-                </div>
-                <div className="review-topic">
-                  <span>
-                    {modeNames[mode]}
-                    {mode === "logic" ? ` · ${framework.id}` : ""}
-                  </span>
-                  <h2>{question}</h2>
-                </div>
-                <AudioPlayer blob={recorder.blob} />
-                {mode === "retell" && (
-                  <details className="reference-details">
-                    <summary>对照原文</summary>
-                    <p>{material.text}</p>
-                  </details>
-                )}
-                {mode === "logic" && (
-                  <details className="reference-details">
-                    <summary>回顾 {framework.id} 结构</summary>
-                    <p>{framework.steps.join(" → ")}</p>
-                    <p>{framework.description}</p>
-                  </details>
-                )}
-                <div className="transcript-editor">
-                  <label htmlFor="transcript">
-                    <TextAlignLeft size={19} />
-                    {recorder.blob ? "语音转文字 · 我的表达" : "我的表达"}
-                    <span>{text.length} / 6000</span>
-                  </label>
-                  {recorder.blob && (
-                    <div className="transcription-status" role="status">
-                      {transcriptionState === "working"
-                        ? "正在识别录音，文字会自动显示在下方…"
-                        : transcriptionState === "error"
-                          ? "转写未完成。可以重试，或回听录音后补充文字。"
-                          : text.trim()
-                            ? "文字已就绪，可以修改识别错误后生成点评。"
-                            : !status.asr
-                              ? "语音转写尚未启用。录音已保留；AI 点评需要先将语音转成文字。"
-                              : "录音已完成，等待转写结果。"}
-                    </div>
-                  )}
-                  <RuleSelector
-                    value={ruleProfile}
-                    onChange={setRuleProfile}
-                    disabled={
-                      Boolean(working) ||
-                      mode === "retell" ||
-                      Boolean(retrySession)
-                    }
-                  />
-                  <textarea
-                    id="transcript"
-                    aria-label="我的表达"
-                    value={text}
-                    maxLength={6000}
-                    disabled={Boolean(working)}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder={
-                      recorder.blob
-                        ? "录音识别出的文字会显示在这里，你也可以手动填写或修正。AI 点评以此处文字为准。"
-                        : "试着先写出你的观点，再给出理由和一个具体例子…"
-                    }
-                    rows={8}
-                  />
-                  <p>
-                    {text.trim().length < 5
-                      ? "尚无足够文字：先完成转写或填写至少 5 个字，才能生成点评。"
-                      : "可以修正文字后再生成点评。"}
-                  </p>
-                </div>
-                {recorder.blob && status.asr && (
-                  <button
-                    className="text-button"
-                    disabled={Boolean(working)}
-                    onClick={() => {
-                      if (
-                        text.trim() &&
-                        !window.confirm(
-                          "重新转写会替换当前编辑的文字，继续吗？",
-                        )
-                      )
-                        return;
-                      void cloudTranscribe(recorder.blob!);
-                    }}
-                  >
-                    <Waveform size={17} />
-                    重新转写录音
-                  </button>
-                )}
-                {working && <AnalysisProgress message={working} />}
                 {(error || recorder.error) && (
                   <ErrorNote>{error || recorder.error}</ErrorNote>
                 )}
-                <div className="review-actions">
-                  <button
-                    className="button primary full"
-                    disabled={Boolean(working) || !status.reachable}
-                    onClick={submit}
-                  >
-                    <Sparkle size={20} />
-                    {status.ai
-                      ? error
-                        ? "重试 AI 点评"
-                        : "生成 AI 点评"
-                      : "查看基础反馈"}
-                  </button>
-                  <div className="two-buttons">
-                    <button
-                      className="button secondary"
-                      disabled={Boolean(working)}
-                      onClick={() => {
-                        if (
-                          (text || recorder.blob) &&
-                          !window.confirm(
-                            "重新练习会清除本次未保存的内容，继续吗？",
-                          )
-                        )
-                          return;
-                        reset();
-                      }}
-                    >
-                      <ArrowClockwise size={18} />
-                      重新练习
-                    </button>
-                    <button
-                      className="button secondary"
-                      disabled={
-                        Boolean(working) ||
-                        (!recorder.blob && text.trim().length < 5)
-                      }
-                      onClick={saveOnly}
-                    >
-                      仅保存练习
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-            {view === "report" && feedback && (
-              <>
-                <div className="report-saved">
-                  {saved ? (
-                    <>
-                      <CheckCircle size={17} weight="fill" />
-                      已保存到练习记录
-                      {lesson ? ` · Day ${lesson.day} 已完成` : ""}
-                    </>
-                  ) : (
-                    "本次反馈尚未保存"
-                  )}
-                </div>
-                <PracticeNext
-                  session={session(feedback)}
-                  disabled={!saved || Boolean(working)}
-                />
-                <AttemptComparison session={session(feedback)} />
-                <Report feedback={feedback} />
-                <details className="reference-details">
-                  <summary>回看我的表达与录音</summary>
-                  <p>{text}</p>
-                  <AudioPlayer blob={recorder.blob} />
-                </details>
-                <div className="report-actions">
-                  <button
-                    className="button primary full"
-                    disabled={Boolean(working)}
-                    onClick={() => (saved ? go("/history") : void saveOnly())}
-                  >
-                    {saved ? "查看练习记录" : "保存本次练习"}
-                    <ArrowRight size={20} />
-                  </button>
-                  <button
-                    className="button secondary full"
-                    disabled={Boolean(working)}
-                    onClick={() => {
-                      if (
-                        !saved &&
-                        !window.confirm("本次反馈尚未保存，仍要离开吗？")
-                      )
-                        return;
-                      setNavigationGuard(undefined);
-                      go(`/practice/${mode}`);
-                    }}
-                  >
-                    换个题目练习
-                  </button>
-                </div>
-              </>
-            )}
-            {working && view !== "review" && (
-              <div className="working-note" role="status">
-                <span className="loading-dots">
-                  <i />
-                  <i />
-                  <i />
-                </span>
-                <AnalysisProgress message={working} />
-              </div>
-            )}
-            {(error || recorder.error) && view !== "review" && (
-              <ErrorNote>{error || recorder.error}</ErrorNote>
-            )}
-            {recorder.speechError && view !== "report" && (
-              <p className="service-note">{recorder.speechError}</p>
-            )}
-          </main>
-          <aside className="practice-guide">
-            <span className="guide-kicker">
-              <Sparkle size={18} />
-              表达小指南
-            </span>
-            <h2>
-              {mode === "logic"
-                ? framework.name
-                : mode === "retell"
-                  ? "抓住重点，再开口"
-                  : "从一个想法开始"}
-            </h2>
-            <p>
-              {mode === "logic"
-                ? framework.description
-                : mode === "retell"
-                  ? "不必背下每一句话，保留原文的核心意思，用自己的语言重新组织。"
-                  : "不用急着想出一个完美答案。先说出你的观点，再分享一个真实的例子。"}
-            </p>
-            <ol>
-              {(mode === "logic"
-                ? framework.steps
-                : mode === "retell"
-                  ? [
-                      "一句话概括主题",
-                      "保留关键理由与事实",
-                      "用自己的话重新组织",
-                      "检查有没有改变原意",
-                    ]
-                  : [
-                      "先说你最想表达的观点",
-                      "给出一个理由",
-                      "分享一个具体的小例子",
-                      "用一句话收住话题",
-                    ]
-              ).map((step, i) => (
-                <li key={step}>
-                  <span>{i + 1}</span>
-                  {step}
-                </li>
-              ))}
-            </ol>
-            <div className="guide-reminder">
-              <Microphone size={22} />
-              <strong>停顿，也是表达的一部分。</strong>
+              </aside>
+            </div>
+            <footer className="practice-setup-footer">
+              {mode !== "retell" && !lesson && !thinking && !retrySession && (
+                <button
+                  className="text-button"
+                  onClick={() =>
+                    kind === "words"
+                      ? shuffleWords()
+                      : setTopic(pick(practiceTopics, topic))
+                  }
+                >
+                  <Shuffle size={17} />
+                  {kind === "words" ? "换一组词" : "换一题"}
+                  <ArrowRight size={17} />
+                </button>
+              )}
+              <span>
+                {practiceFocus
+                  ? `本轮目标：${practiceFocus}`
+                  : "每一次开口，都算数"}
+              </span>
+              <span>录音后可修改转写文字，再获取反馈</span>
+            </footer>
+          </>
+        )}
+        {view === "session" && (
+          <section className="practice-recording-panel">
+            <div className="session-topic">
+              <span className="eyebrow">
+                {countdown !== null
+                  ? "准备开口"
+                  : recorder.phase === "processing"
+                    ? "正在整理录音"
+                    : recorder.phase === "recording"
+                      ? "正在录音"
+                      : "录音暂未开始"}
+              </span>
+              <h2>{question}</h2>
               <p>
-                卡住时，深呼吸。
-                <br />
-                说清楚，比说得快更重要。
+                {practiceFocus
+                  ? `本轮目标：${practiceFocus}`
+                  : structureSteps.join(" → ")}
               </p>
             </div>
-            <div className="guide-service">
-              <CheckCircle size={16} />
-              <span>录音与记录保存在本机</span>
+            <div className="record-stage">
+              {countdown !== null ? (
+                <>
+                  <span className="countdown-circle" key={countdown}>
+                    {countdown}
+                  </span>
+                  <p>深呼吸，准备开口</p>
+                </>
+              ) : (
+                <>
+                  <div className="record-timer">
+                    <span>{clockText(recorder.seconds)}</span>
+                    <small>
+                      已表达 {recorder.seconds} 秒 / 目标 {targetDuration} 秒
+                    </small>
+                  </div>
+                  <WaveformCanvas
+                    analyser={recorder.analyser}
+                    active={recorder.phase === "recording"}
+                  />
+                  <p className="live-transcript" aria-live="off">
+                    {recorder.transcript ||
+                      (recorder.phase === "recording"
+                        ? "正在收音 · 不用追求一次完美"
+                        : recorder.phase === "processing"
+                          ? "正在保留录音，请稍等"
+                          : "检查麦克风后，可以返回准备页面重试")}
+                  </p>
+                  {recorder.phase === "recording" &&
+                    targetDuration - recorder.seconds <= 5 && (
+                      <p role="status">
+                        还有 {targetDuration - recorder.seconds}{" "}
+                        秒，可以用一句话收束。
+                      </p>
+                    )}
+                </>
+              )}
             </div>
-          </aside>
-        </div>
-      </div>
-    </>
+            {recorder.phase === "recording" && (
+              <div className="record-action">
+                <button
+                  className="button stop-record full"
+                  aria-label="结束录音"
+                  onClick={recorder.stop}
+                >
+                  <Square size={17} weight="fill" />
+                  结束录音
+                </button>
+                <p>结束后可先校对文字，再获取反馈</p>
+              </div>
+            )}
+            {recorder.phase === "processing" && (
+              <div className="processing-label" role="status">
+                正在整理你的录音…
+              </div>
+            )}
+            {recorder.phase === "idle" && (
+              <button
+                className="button secondary full"
+                onClick={() => setView("setup")}
+              >
+                返回准备页面
+              </button>
+            )}
+            {draft && (
+              <details className="recording-outline" open>
+                <summary>我的提纲</summary>
+                <p>{draft}</p>
+              </details>
+            )}
+            {recorder.error && <ErrorNote>{recorder.error}</ErrorNote>}
+          </section>
+        )}
+        {view === "review" && (
+          <section className="practice-review-grid">
+            <section className="practice-review-panel">
+              <div className="review-topic">
+                <span>
+                  {recorder.blob ? "录音已完成，可以修正转写" : "文字练习"}
+                </span>
+                <h2>{question}</h2>
+              </div>
+              <AudioPlayer blob={recorder.blob} />
+              <div className="transcript-editor">
+                <label htmlFor="transcript">
+                  <TextAlignLeft size={19} />
+                  {recorder.blob ? "转写文本 · 我的表达" : "我的表达"}
+                  <span>{text.length} / 6000</span>
+                </label>
+                {recorder.blob && (
+                  <div className="transcription-status" role="status">
+                    {transcriptionState === "working"
+                      ? "正在识别录音，文字会自动显示在下方…"
+                      : transcriptionState === "error"
+                        ? "转写未完成。可以重试，或回听录音后补充文字。"
+                        : text.trim()
+                          ? "可直接修改转写错误，不影响原录音。"
+                          : !status.asr
+                            ? "语音转写尚未启用。录音已保留；AI 点评需要先将语音转成文字。"
+                            : "录音已完成，等待转写结果。"}
+                  </div>
+                )}
+                <textarea
+                  id="transcript"
+                  aria-label="我的表达"
+                  value={text}
+                  maxLength={6000}
+                  disabled={Boolean(working)}
+                  onChange={(e) => {
+                    setText(e.target.value);
+                    setSaved(false);
+                    setFeedback(undefined);
+                  }}
+                  placeholder={
+                    recorder.blob
+                      ? "录音识别出的文字会显示在这里，你也可以手动填写或修正。AI 点评以此处文字为准。"
+                      : "试着先写出你的观点，再给出理由和一个具体例子…"
+                  }
+                  rows={9}
+                />
+                <p>
+                  {text.trim().length < 5
+                    ? "先完成转写或填写至少 5 个字，才能生成点评。"
+                    : "点评以这份文字为准，原录音会继续保留。"}
+                </p>
+              </div>
+              {recorder.blob && status.asr && (
+                <button
+                  className="text-button"
+                  disabled={Boolean(working)}
+                  onClick={() => {
+                    if (
+                      text.trim() &&
+                      !window.confirm("重新转写会替换当前编辑的文字，继续吗？")
+                    )
+                      return;
+                    void cloudTranscribe(recorder.blob!);
+                  }}
+                >
+                  <Waveform size={17} />
+                  重新转写录音
+                </button>
+              )}
+              {mode === "retell" && (
+                <details className="reference-details">
+                  <summary>对照原文</summary>
+                  <p>{material.text}</p>
+                </details>
+              )}
+              {mode === "logic" && (
+                <details className="reference-details">
+                  <summary>回顾 {framework.id} 结构</summary>
+                  <p>{framework.steps.join(" → ")}</p>
+                  <p>{framework.description}</p>
+                </details>
+              )}
+            </section>
+            <aside className="practice-review-controls">
+              <h2>准备好，再看看反馈</h2>
+              <p className="review-controls-intro">
+                先保存内容，再获取反馈。暂时没有结果，也可以稍后继续。
+              </p>
+              <RuleSelector
+                value={ruleProfile}
+                onChange={(value) => {
+                  setRuleProfile(value);
+                  setFeedback(undefined);
+                  setSaved(false);
+                }}
+                disabled={
+                  Boolean(working) || mode === "retell" || Boolean(retrySession)
+                }
+              />
+              {working && <AnalysisProgress message={working} />}
+              {(error || recorder.error) && (
+                <div className="practice-recovery">
+                  {saved && <strong>内容已保存，反馈暂未完成</strong>}
+                  <ErrorNote>{error || recorder.error}</ErrorNote>
+                  {saved && (
+                    <p>可以重试，或稍后从「我的练习」继续，无需重新录音。</p>
+                  )}
+                  {analysisSeconds !== undefined && (
+                    <small>最近一次等待：{analysisSeconds} 秒</small>
+                  )}
+                </div>
+              )}
+              <div className="review-actions">
+                <button
+                  className="button primary full"
+                  disabled={Boolean(working)}
+                  onClick={() =>
+                    status.ai
+                      ? void submit(true)
+                      : setAiCheckRequest((request) => request + 1)
+                  }
+                >
+                  <Sparkle size={20} />
+                  {error ? "重试 AI 点评" : "生成 AI 点评"}
+                </button>
+                <button
+                  className="button secondary full"
+                  disabled={Boolean(working) || !status.reachable}
+                  onClick={() => void submit(false)}
+                >
+                  查看基础反馈
+                </button>
+                <button
+                  className="button secondary full"
+                  disabled={
+                    Boolean(working) ||
+                    (!recorder.blob && text.trim().length < 5)
+                  }
+                  onClick={saveOnly}
+                >
+                  仅保存练习
+                </button>
+                <button
+                  className="text-button restart-practice"
+                  disabled={Boolean(working)}
+                  onClick={() => {
+                    if (
+                      (text || recorder.blob) &&
+                      !window.confirm(
+                        "重新练习会清除本次未保存的内容，继续吗？",
+                      )
+                    )
+                      return;
+                    reset();
+                  }}
+                >
+                  <ArrowClockwise size={17} />
+                  重新练习
+                </button>
+              </div>
+              {!status.ai && (
+                <AIRecovery
+                  disabled={Boolean(working)}
+                  checkLabel="检查 AI 连接"
+                  requested={aiCheckRequest}
+                  onReady={() => void submit(true)}
+                />
+              )}
+              <p className="service-note">
+                {status.ai
+                  ? "录音与文字都会保留；反馈成功后进入复盘。"
+                  : "AI 点评需要连接模型；基础反馈不会生成 AI 判断。"}
+              </p>
+            </aside>
+          </section>
+        )}
+        {view === "report" && feedback && (
+          <section className="practice-report-panel">
+            <div className="report-saved">
+              {saved ? (
+                <>
+                  <CheckCircle size={17} weight="fill" />
+                  已保存到练习记录{lesson ? ` · Day ${lesson.day} 已完成` : ""}
+                </>
+              ) : (
+                "本次反馈尚未保存"
+              )}
+            </div>
+            <FeedbackReview
+              session={session(feedback)}
+              disabled={!saved || Boolean(working)}
+              onEdit={() => {
+                setPreviousAttempt({ transcript: text, feedback });
+                setView("review");
+                window.scrollTo(0, 0);
+              }}
+            />
+            <div className="report-actions">
+              <button
+                className="button primary"
+                disabled={Boolean(working)}
+                onClick={() => (saved ? go("/history") : void saveOnly())}
+              >
+                {saved ? "查看练习记录" : "保存本次练习"}
+                <ArrowRight size={19} />
+              </button>
+              <button
+                className="button secondary"
+                disabled={Boolean(working)}
+                onClick={() => {
+                  if (
+                    !saved &&
+                    !window.confirm("本次反馈尚未保存，仍要离开吗？")
+                  )
+                    return;
+                  setNavigationGuard(undefined);
+                  go(`/practice/${mode}`);
+                }}
+              >
+                换个题目练习
+              </button>
+            </div>
+            {error && <ErrorNote>{error}</ErrorNote>}
+          </section>
+        )}
+        {working && view !== "review" && <AnalysisProgress message={working} />}
+        {recorder.speechError && view !== "report" && (
+          <p className="service-note">{recorder.speechError}</p>
+        )}
+      </main>
+    </div>
   );
 }

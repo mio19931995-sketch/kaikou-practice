@@ -3,6 +3,7 @@ import { jsonrepair } from "jsonrepair";
 import { metricsFor } from "./feedback.mjs";
 import { profileFor, profiles, segmentsFor } from "./jev-rules.mjs";
 import thinkingRubrics from "./thinking-rubrics.json" with { type: "json" };
+import { expressionStructureStandard } from "./expression-rubrics.mjs";
 export function coachingStandard(input) {
   const profile = profileFor(input);
   const base = [
@@ -89,6 +90,9 @@ export function coachingStandard(input) {
       "是否保留主旨而压缩次要信息，不添加自己的结论，缺原文判 unsure",
     ];
   }
+  const expressionStandard = expressionStructureStandard(input.framework);
+  if (expressionStandard && profile !== "retell")
+    base[1] = ["structure", "框架运用", expressionStandard];
   const templates = {
     report:
       "目前的情况是[已确认的情况]。主要原因是[具体原因及影响环节]。接下来由[负责人]采取[具体行动]，在[时间]完成或同步进展。尚未确定的是[待确认事项]。",

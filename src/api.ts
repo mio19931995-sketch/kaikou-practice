@@ -18,12 +18,18 @@ export async function getStatus(): Promise<ServiceStatus> {
     return { ai: false, asr: false, reachable: false };
   }
 }
-export async function analyze(session: Session): Promise<Feedback> {
+export async function analyze(
+  session: Session,
+  requireAI = false,
+): Promise<Feedback> {
   try {
     return await jsonResponse(
       await fetch("/api/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Kaikou-Require-AI": requireAI ? "1" : "0",
+        },
         body: JSON.stringify({
           transcript: session.transcript,
           mode: session.mode,

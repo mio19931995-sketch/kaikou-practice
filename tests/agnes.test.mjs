@@ -10,6 +10,14 @@ test('Agnes uses scene-specific dimensions and retains real evidence',()=>{
  assert.equal(coachingStandard({...fixture.input,ruleProfile:'interview'}).dimensions[2].title,'个人贡献与事实');
  assert.equal(JSON.parse(buildAgnesMessages(fixture.input)[1].content).transcript,fixture.input.transcript);
 });
+test('Agnes checks a selected communication framework without inventing audio or another speaker', () => {
+ const spark=coachingStandard({...fixture.input,framework:'SPARK 即兴发言：稳住心态 → 抓住观点 → 组织框架 → 建立联系 → 简洁收尾'});
+ assert.match(spark.dimensions[1].standard,/不能仅凭转写判断/);
+ const leaps=coachingStandard({...fixture.input,framework:'LEAPS 倾听对话：倾听 → 换位 → 询问 → 复述 → 总结'});
+ assert.match(leaps.dimensions[1].standard,/没有对方原话时/);
+ const ride=coachingStandard({...fixture.input,framework:'RIDE 说服：风险 → 利益 → 差异 → 影响'});
+ assert.match(ride.dimensions[1].standard,/不要求夸大风险/);
+});
 test('Agnes rejects invented quotations, wrong dimensions, instruction echo and incomplete reports',()=>{
  const bad=structuredClone(fixture.feedback);bad.dimensions[0].evidence=['下周五交付'];assert.throws(()=>parseAgnes(JSON.stringify(bad),fixture.input));
  bad.dimensions[0].evidence=[];bad.dimensions[0].id='fake';assert.throws(()=>parseAgnes(JSON.stringify(bad),fixture.input));

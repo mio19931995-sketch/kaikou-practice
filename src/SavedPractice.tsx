@@ -1,10 +1,10 @@
-import { PracticeNext, AnalysisProgress } from "./PracticeLoop";
+import { AIRecovery } from "./AIRecovery";
+import { FeedbackReview, AnalysisProgress } from "./PracticeLoop";
 import { RuleSelector } from "./RuleSelector";
-import { AttemptComparison } from "./ScenarioReport";
 import type { RuleProfile } from "./types";
 import { useEffect, useRef, useState } from "react";
 import { analyze, transcribe } from "./api";
-import { ErrorNote, Report, setNavigationGuard } from "./components";
+import { ErrorNote, setNavigationGuard } from "./components";
 import { saveSession } from "./storage";
 import type { Session, ServiceStatus } from "./types";
 
@@ -24,6 +24,7 @@ export function SavedPractice({
   );
   const [text, setText] = useState(session.transcript);
   const [working, setWorking] = useState("");
+  const [aiCheckRequest, setAiCheckRequest] = useState(0);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const active = useRef(true);
@@ -51,7 +52,10 @@ export function SavedPractice({
       window.removeEventListener("beforeunload", unload);
     };
   }, [dirty, working]);
-  async function run(action: "transcribe" | "analyze" | "save") {
+  async function run(
+    action: "transcribe" | "analyze" | "save",
+    requireAI = true,
+  ) {
     if (working) return;
     if (action === "analyze" && text.trim().length < 5) {
       setError("请先转写录音或填写至少 5 个字，再生成点评。");
@@ -109,7 +113,9 @@ export function SavedPractice({
           await refresh();
         }
         const report =
-          action === "analyze" ? await analyze(updated) : updated.feedback;
+          action === "analyze"
+            ? await analyze(updated, requireAI)
+            : updated.feedback;
         if (!active.current) return;
         await saveSession({ ...updated, feedback: report });
         await refresh();
@@ -127,7 +133,7 @@ export function SavedPractice({
     }
   }
   return (
-    <>
+    <div className="saved-practice-redesign">
       <section className="saved-practice-editor">
         <label htmlFor="saved-transcript">
           {session.audio ? "语音转文字 · 我的表达" : "我的表达"}
@@ -141,6 +147,14 @@ export function SavedPractice({
           onChange={setRuleProfile}
           disabled={Boolean(working) || session.mode === "retell"}
         />
+        {!status.ai && (
+          <AIRecovery
+            disabled={Boolean(working)}
+            checkLabel="检查 AI 连接"
+            requested={aiCheckRequest}
+            onReady={() => void run("analyze", true)}
+          />
+        )}
         <div className="saved-record-actions">
           {session.audio && (
             <button
@@ -153,16 +167,25 @@ export function SavedPractice({
           )}
           <button
             className="button primary"
-            disabled={Boolean(working) || !status.reachable}
-            onClick={() => void run("analyze")}
+            disabled={Boolean(working)}
+            onClick={() =>
+              status.ai
+                ? void run("analyze", true)
+                : setAiCheckRequest((request) => request + 1)
+            }
           >
-            {status.ai
-              ? error
-                ? "重试 AI 点评"
-                : session.feedback?.source === "ai"
-                  ? "重新生成 AI 点评"
-                  : "生成 AI 点评"
-              : "查看基础反馈"}
+            {error
+              ? "重试 AI 点评"
+              : session.feedback?.source === "ai"
+                ? "重新生成 AI 点评"
+                : "生成 AI 点评"}
+          </button>
+          <button
+            className="button secondary"
+            disabled={Boolean(working) || !status.reachable}
+            onClick={() => void run("analyze", false)}
+          >
+            查看基础反馈
           </button>
           <button
             className="button secondary"
@@ -198,14 +221,17 @@ export function SavedPractice({
               下方是修改前的点评。生成新点评后会更新。
             </p>
           )}
-          <PracticeNext
+          <FeedbackReview
             session={session}
             disabled={dirty || Boolean(working)}
+            onViewTranscript={() => {
+              const editor = document.getElementById("saved-transcript");
+              editor?.scrollIntoView({ block: "center" });
+              editor?.focus();
+            }}
           />
-          <AttemptComparison session={session} />
-          <Report feedback={session.feedback} />
         </>
       )}
-    </>
+    </div>
   );
 }

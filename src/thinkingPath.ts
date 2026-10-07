@@ -62,13 +62,16 @@ export const reviewGaps = [3, 7];
 export function reviewState(p: Progress | undefined, now = Date.now()) {
   if (!p?.learnedAt) return { state: "new" as ReviewState, dueAt: 0 };
   const reviews = p.reviews || [];
-  if (reviews.length >= reviewGaps.length)
-    return { state: "mastered" as ReviewState, dueAt: 0 };
   const from = Date.parse(reviews.at(-1) || p.learnedAt);
-  const dueAt = from + reviewGaps[reviews.length] * day;
+  const dueAt =
+    from + reviewGaps[Math.min(reviews.length, reviewGaps.length - 1)] * day;
   if (now >= dueAt) return { state: "due" as ReviewState, dueAt };
   return {
-    state: (reviews.length ? "reviewed" : "learned") as ReviewState,
+    state: (reviews.length >= 2
+      ? "mastered"
+      : reviews.length
+        ? "reviewed"
+        : "learned") as ReviewState,
     dueAt,
   };
 }

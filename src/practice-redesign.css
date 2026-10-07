@@ -1,0 +1,1390 @@
+/* Practice surfaces follow the approved warm-white / forest-green design. */
+.app-shell .practice-redesign,
+.app-shell .saved-practice-redesign,
+.app-shell .feedback-redesign {
+  --practice-green: #2f5d50;
+  --practice-ink: #203b33;
+  --practice-text: #354b43;
+  --practice-muted: #76847c;
+  --practice-line: #dfe6df;
+  --practice-pale: #f0f4ef;
+  color: var(--practice-text);
+}
+.app-shell .practice-redesign .practice-workspace {
+  --accent: #2f5d50;
+  --border: #dfe6df;
+  --muted: #76847c;
+  --card: #fff;
+  --surface: #f6f8f4;
+  --subtle: #edf2ec;
+  --text: #203b33;
+  max-width: 1320px;
+  width: 100%;
+  padding: 16px 40px 40px;
+  margin: 0 auto;
+  color: var(--practice-text);
+  background: transparent;
+}
+.app-shell .practice-redesign > .page-header {
+  background: transparent;
+  border: 0;
+  color: #64746b;
+  box-shadow: none;
+}
+.app-shell .practice-redesign .header-pill {
+  background: #eaf0e8;
+  color: #2f5d50;
+}
+.app-shell .practice-redesign .practice-masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+.app-shell .practice-redesign .practice-masthead h1 {
+  margin: 0;
+  color: var(--practice-ink);
+  font-size: clamp(25px, 2.4vw, 32px);
+  line-height: 1.45;
+  letter-spacing: -0.7px;
+}
+.app-shell .practice-redesign .practice-masthead p {
+  margin: 10px 0 0;
+  color: var(--practice-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.app-shell .practice-redesign .practice-masthead p > span {
+  margin: 0 10px;
+  color: #98a39b;
+}
+.app-shell .practice-redesign .practice-local-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--practice-muted);
+  font-size: 11px;
+  white-space: nowrap;
+  padding-top: 10px;
+}
+.app-shell .practice-redesign .practice-mode-tabs,
+.app-shell .feedback-redesign .feedback-tabs {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  margin-bottom: 28px;
+  border: 0;
+}
+.app-shell .practice-redesign .practice-mode-tabs button,
+.app-shell .feedback-redesign .feedback-tabs button {
+  border: 0;
+  background: transparent;
+  color: #77877d;
+  padding: 8px 0;
+  font-size: 14px;
+  cursor: pointer;
+  min-height: 40px;
+}
+.app-shell .practice-redesign .practice-mode-tabs button.is-active,
+.app-shell .feedback-redesign .feedback-tabs button.is-active {
+  color: #2f5d50;
+  font-weight: 650;
+}
+.app-shell .practice-redesign .practice-stepper {
+  display: none;
+}
+.app-shell .practice-redesign .practice-setup-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(290px, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+.app-shell .practice-redesign .practice-topic-panel,
+.app-shell .practice-redesign .practice-setup-panel,
+.app-shell .practice-redesign .practice-review-panel,
+.app-shell .practice-redesign .practice-review-controls {
+  min-width: 0;
+  border: 1px solid var(--practice-line);
+  border-radius: 17px;
+  padding: 26px;
+  background: #fff;
+}
+.app-shell .practice-redesign .practice-topic-panel {
+  min-height: 550px;
+}
+.app-shell .practice-redesign .practice-setup-panel {
+  background: #eff3ee;
+}
+.app-shell .practice-redesign .practice-setup-panel > h2,
+.app-shell .practice-redesign .practice-review-controls > h2 {
+  color: var(--practice-ink);
+  font-size: 19px;
+  line-height: 1.5;
+  margin: 0 0 22px;
+}
+.app-shell .practice-redesign .practice-topic-tags {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.app-shell .practice-redesign .practice-topic-tags > span {
+  background: #edf2eb;
+  color: #2f5d50;
+  border-radius: 6px;
+  padding: 6px 13px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.app-shell .practice-redesign .question-card {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--practice-ink);
+  box-shadow: none;
+  border-radius: 0;
+}
+.app-shell .practice-redesign .question-card h2 {
+  margin: 10px 0 16px;
+  min-height: 0;
+  max-width: 100%;
+  font-size: clamp(23px, 2.05vw, 29px);
+  line-height: 1.55;
+  letter-spacing: -0.4px;
+  color: var(--practice-ink);
+}
+.app-shell .practice-redesign .question-card p {
+  color: var(--practice-muted);
+  font-size: 15px;
+  line-height: 1.8;
+  margin: 0 0 14px;
+  white-space: pre-line;
+}
+.app-shell .practice-redesign .question-card.reading-card > p {
+  color: var(--practice-text);
+  max-height: 340px;
+  overflow: auto;
+}
+.app-shell .practice-redesign .practice-structure {
+  border-top: 1px solid var(--practice-line);
+  padding-top: 12px;
+  margin-top: 17px;
+}
+.app-shell .practice-redesign .practice-structure h3 {
+  margin: 0 0 12px;
+  color: #2f5d50;
+  font-size: 13px;
+}
+.app-shell .practice-redesign .mini-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+  margin: 0 0 18px;
+  gap: 11px;
+  padding: 0;
+}
+.app-shell .practice-redesign .mini-steps > span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 76px;
+  padding: 14px;
+  background: #eff3ee;
+  color: var(--practice-text);
+  border: 0;
+  border-radius: 16px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.app-shell .practice-redesign .mini-steps i {
+  color: #2f5d50;
+  font-size: 12px;
+  font-style: normal;
+  background: transparent;
+  border-radius: 0;
+  width: auto;
+  height: auto;
+}
+.app-shell .practice-redesign .preparation-draft {
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--practice-text);
+}
+.app-shell .practice-redesign .preparation-draft summary {
+  color: #52685a;
+  font-size: 12px;
+  padding: 2px 0 9px;
+  cursor: pointer;
+}
+.app-shell .practice-redesign .preparation-draft details p {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--practice-muted);
+  line-height: 1.7;
+  white-space: pre-line;
+}
+.app-shell .practice-redesign .preparation-draft > label {
+  display: block;
+  font-size: 13px;
+  margin: 3px 0 10px;
+  color: var(--practice-text);
+}
+.app-shell .practice-redesign textarea,
+.app-shell .saved-practice-redesign textarea {
+  width: 100%;
+  max-width: 100%;
+  resize: vertical;
+  border: 1px solid var(--practice-line);
+  border-radius: 16px;
+  background: #f7f8f4;
+  color: var(--practice-text);
+  padding: 16px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.75;
+  box-shadow: none;
+}
+.app-shell .practice-redesign .preparation-draft textarea {
+  min-height: 90px;
+}
+.app-shell .practice-redesign textarea::placeholder,
+.app-shell .saved-practice-redesign textarea::placeholder {
+  color: #819085;
+  opacity: 1;
+}
+.app-shell .practice-redesign .draft-to-text {
+  margin-top: 10px;
+  font-size: 12px;
+}
+.app-shell .practice-redesign .practice-input-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #fff;
+  border-radius: 9px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.app-shell .practice-redesign .practice-input-switch button {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  border: 0;
+  background: #fff;
+  color: #2f5d50;
+  font-size: 13px;
+  min-height: 46px;
+  border-radius: 8px;
+  padding: 10px 6px;
+  cursor: pointer;
+}
+.app-shell .practice-redesign .practice-input-switch button.is-active {
+  background: #2f5d50;
+  color: #fff;
+}
+.app-shell .practice-redesign .prep-section {
+  margin: 0 0 23px;
+}
+.app-shell .practice-redesign .prep-section h3 {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--practice-muted);
+  margin: 0 0 16px;
+}
+.app-shell .practice-redesign .prep-options {
+  display: flex;
+  gap: 8px;
+  max-width: none;
+}
+.app-shell .practice-redesign .prep-options button {
+  flex: 1;
+  min-width: 0;
+  min-height: 34px;
+  padding: 7px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: #2f5d50;
+  background: #fff;
+  border: 1px solid transparent;
+  box-shadow: none;
+  border-radius: 7px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.app-shell .practice-redesign .prep-options button.selected {
+  background: #2f5d50;
+  border-color: #2f5d50;
+  color: #fff;
+  box-shadow: none;
+}
+.app-shell .practice-redesign .prep-options small {
+  margin: 0;
+  color: inherit;
+  font-size: 11px;
+}
+.app-shell .practice-redesign .service-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--practice-muted);
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 12px 0;
+}
+.app-shell .practice-redesign .service-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.app-shell .practice-redesign .practice-mic-note {
+  display: flex;
+  gap: 10px;
+  padding-top: 20px;
+  border-top: 1px solid var(--practice-line);
+  color: #527260;
+  margin: 7px 0 14px;
+}
+.app-shell .practice-redesign .practice-mic-note svg {
+  flex-shrink: 0;
+}
+.app-shell .practice-redesign .practice-mic-note strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.app-shell .practice-redesign .practice-mic-note p {
+  margin: 6px 0 0;
+  color: var(--practice-muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+.app-shell .practice-redesign .speech-switch {
+  padding: 0;
+  margin: 13px 0;
+  color: var(--practice-text);
+  background: transparent;
+}
+.app-shell .practice-redesign .speech-switch span {
+  font-size: 12px;
+}
+.app-shell .practice-redesign .speech-switch small {
+  color: var(--practice-muted);
+  font-size: 10px;
+}
+.app-shell .practice-redesign .speech-switch input {
+  accent-color: #2f5d50;
+}
+.app-shell .practice-redesign .practice-start {
+  display: block;
+  margin-top: 21px;
+}
+.app-shell .practice-redesign .practice-start > .button {
+  min-width: 0;
+  width: 100%;
+}
+.app-shell .practice-redesign .button,
+.app-shell .saved-practice-redesign .button,
+.app-shell .feedback-redesign .button {
+  border-radius: 9px;
+  box-shadow: none;
+  min-height: 46px;
+  font-size: 13px;
+  justify-content: center;
+  gap: 9px;
+}
+.app-shell .practice-redesign .button.primary,
+.app-shell .saved-practice-redesign .button.primary {
+  background: #2f5d50;
+  border-color: #2f5d50;
+  color: #fff;
+}
+.app-shell .practice-redesign .button.primary:hover:not(:disabled),
+.app-shell .saved-practice-redesign .button.primary:hover:not(:disabled) {
+  background: #244b40;
+}
+.app-shell .practice-redesign .button.secondary,
+.app-shell .saved-practice-redesign .button.secondary {
+  background: #eaf0e8;
+  border-color: #eaf0e8;
+  color: #2f5d50;
+}
+.app-shell .practice-redesign .text-button,
+.app-shell .feedback-redesign .text-button {
+  color: #2f5d50;
+}
+.app-shell .practice-redesign .practice-setup-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px 30px;
+  margin-top: 22px;
+  padding: 16px 20px;
+  border: 1px solid var(--practice-line);
+  border-radius: 16px;
+  background: #fff;
+  font-size: 12px;
+  color: var(--practice-muted);
+  min-height: 66px;
+}
+.app-shell .practice-redesign .practice-setup-footer .text-button {
+  font-size: 12px;
+}
+.app-shell .practice-redesign .practice-focus {
+  margin: 0 0 20px;
+  padding: 17px 22px;
+  background: #eaf0e8;
+  border: 1px solid #dce6db;
+  border-radius: 13px;
+  color: #2f5d50;
+}
+.app-shell .practice-redesign .practice-focus h3 {
+  font-size: 15px;
+  margin: 0 0 6px;
+}
+.app-shell .practice-redesign .practice-focus p {
+  font-size: 13px;
+  margin: 0 0 6px;
+}
+.app-shell .practice-redesign .practice-focus small {
+  font-size: 11px;
+  color: #647c6b;
+}
+.app-shell .practice-redesign .topic-kind {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 20px;
+  padding: 3px;
+  border-radius: 9px;
+  background: #f0f4ed;
+}
+.app-shell .practice-redesign .topic-kind button {
+  min-height: 33px;
+  padding: 5px 16px;
+  color: #738378;
+  font-size: 12px;
+}
+.app-shell .practice-redesign .topic-kind button.selected {
+  color: #2f5d50;
+  background: #fff;
+  box-shadow: none;
+}
+.app-shell .practice-redesign .word-card {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex-direction: row;
+  min-height: 140px;
+  margin: 0;
+  padding: 22px 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.app-shell .practice-redesign .word-card > span {
+  color: #2f5d50;
+  background: #edf2eb;
+  border: 0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 25px;
+}
+.app-shell .practice-redesign .word-selects label {
+  color: #728277;
+}
+.app-shell .practice-redesign select,
+.app-shell .saved-practice-redesign select {
+  background: #fff;
+  color: #354b43;
+  border: 1px solid #dfe6df;
+  border-radius: 8px;
+  box-shadow: none;
+  max-width: 100%;
+}
+/* Recording is a separate, focused state; no static waveform or invented device level. */
+.app-shell .practice-redesign .practice-recording-panel {
+  width: min(100%, 740px);
+  min-height: 650px;
+  margin: 0 auto;
+  padding: 30px 40px;
+  background: #2f5d50;
+  border-radius: 17px;
+  color: #fff;
+}
+.app-shell .practice-redesign .session-topic {
+  padding: 0;
+  text-align: left;
+  background: transparent;
+  margin: 0;
+}
+.app-shell .practice-redesign .session-topic .eyebrow {
+  color: #c8dcd0;
+  font-size: 12px;
+}
+.app-shell .practice-redesign .session-topic h2 {
+  color: #fff;
+  font-size: 25px;
+  line-height: 1.6;
+  margin: 20px 0;
+}
+.app-shell .practice-redesign .session-topic > p {
+  color: #d2e1d7;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.app-shell .practice-redesign .record-stage {
+  padding: 23px 0 12px;
+  min-height: 250px;
+  text-align: center;
+}
+.app-shell .practice-redesign .record-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 13px;
+  margin: 18px 0;
+}
+.app-shell .practice-redesign .record-timer > span {
+  color: #fff;
+  font-size: clamp(56px, 7vw, 72px);
+  line-height: 1.1;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+}
+.app-shell .practice-redesign .record-timer > small {
+  color: #d2e1d7;
+  font-size: 12px;
+}
+.app-shell .practice-redesign .record-stage canvas {
+  filter: saturate(0.35) brightness(1.5);
+  max-width: 100%;
+  margin: 14px 0;
+}
+.app-shell .practice-redesign .record-stage .live-transcript {
+  color: #d2e1d7;
+  font-size: 13px;
+  min-height: 24px;
+  line-height: 1.8;
+  margin: 14px 0 0;
+}
+.app-shell .practice-redesign .record-stage > p {
+  color: #d2e1d7;
+}
+.app-shell .practice-redesign .countdown-circle {
+  border-color: #91b2a1;
+  background: transparent;
+  color: #fff;
+  box-shadow: none;
+}
+.app-shell .practice-redesign .record-action {
+  display: block;
+  margin: 12px 0 0;
+}
+.app-shell .practice-redesign .stop-record {
+  width: 100%;
+  height: auto;
+  border-radius: 9px;
+  background: #fff;
+  color: #2f5d50;
+  border: 0;
+  box-shadow: none;
+}
+.app-shell .practice-redesign .record-action > p {
+  font-size: 12px;
+  color: #c8dcd0;
+  line-height: 1.7;
+}
+.app-shell .practice-redesign .recording-outline {
+  border-top: 1px solid #a2bdad;
+  margin-top: 23px;
+  padding-top: 18px;
+}
+.app-shell .practice-redesign .recording-outline summary {
+  color: #c8dcd0;
+  font-size: 12px;
+  cursor: pointer;
+}
+.app-shell .practice-redesign .recording-outline p {
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+/* Transcript and recoverable feedback failure. */
+.app-shell .practice-redesign .practice-review-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.app-shell .practice-redesign .practice-review-panel {
+  padding: 24px;
+}
+.app-shell .practice-redesign .review-topic {
+  background: transparent;
+  padding: 0 0 18px;
+  border: 0;
+  margin: 0;
+  border-radius: 0;
+  color: var(--practice-text);
+}
+.app-shell .practice-redesign .review-topic > span {
+  color: #74867a;
+  font-size: 12px;
+}
+.app-shell .practice-redesign .review-topic h2 {
+  color: #203b33;
+  font-size: 20px;
+  line-height: 1.6;
+  margin: 8px 0 0;
+}
+.app-shell .practice-redesign .transcript-editor {
+  margin-top: 12px;
+}
+.app-shell .practice-redesign .transcript-editor label {
+  color: #2f5d50;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+}
+.app-shell .practice-redesign .transcript-editor label > span {
+  color: #859087;
+  font-size: 11px;
+}
+.app-shell .practice-redesign .transcript-editor textarea {
+  margin-top: 13px;
+  min-height: 230px;
+}
+.app-shell .practice-redesign .transcript-editor > p {
+  color: #849087;
+  font-size: 11px;
+}
+.app-shell .practice-redesign .transcription-status {
+  background: transparent;
+  padding: 8px 0 0;
+  border: 0;
+  color: #728176;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.app-shell .practice-redesign .practice-review-controls {
+  background: #f0f4ef;
+}
+.app-shell .practice-redesign .practice-review-controls h2 {
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+.app-shell .practice-redesign .review-controls-intro {
+  color: #7a897e;
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 0 0 19px;
+}
+.app-shell .practice-redesign .rule-selector {
+  display: block;
+  background: transparent;
+  padding: 0;
+  border: 0;
+  color: #536c5c;
+  margin: 14px 0 20px;
+  font-size: 12px;
+}
+.app-shell .practice-redesign .rule-selector select {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  font-size: 12px;
+  padding: 11px 9px;
+}
+.app-shell .practice-redesign .rule-selector small {
+  color: #7a897e;
+  font-size: 11px;
+}
+.app-shell .practice-redesign .review-actions {
+  position: static;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+  margin: 18px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.app-shell .practice-redesign .restart-practice {
+  align-self: center;
+  font-size: 12px;
+  padding: 8px;
+}
+.app-shell .practice-redesign .practice-recovery {
+  padding: 17px;
+  border-radius: 15px;
+  background: #f6f0e5;
+  color: #80633d;
+  margin-top: 18px;
+}
+.app-shell .practice-redesign .practice-recovery > strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.app-shell .practice-redesign .practice-recovery p {
+  font-size: 12px;
+  line-height: 1.8;
+}
+.app-shell .practice-redesign .practice-recovery small {
+  font-size: 11px;
+}
+.app-shell .practice-redesign .practice-recovery .error-note {
+  color: #80633d;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 8px 0;
+}
+.app-shell .practice-redesign .reference-details,
+.app-shell .feedback-redesign .reference-details {
+  background: #f7f8f4;
+  border: 1px solid #dfe6df;
+  color: #354b43;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 18px;
+}
+.app-shell .practice-redesign .reference-details summary,
+.app-shell .feedback-redesign .reference-details summary {
+  color: #2f5d50;
+  font-size: 13px;
+  cursor: pointer;
+}
+.app-shell .practice-redesign .reference-details p,
+.app-shell .feedback-redesign .reference-details p {
+  color: #354b43;
+  font-size: 13px;
+  line-height: 1.9;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* Evidence-first coaching, with complete provider output kept below. */
+.app-shell .practice-redesign .report-saved {
+  margin: 0 0 13px;
+  color: #64806d;
+  background: transparent;
+  font-size: 12px;
+  justify-content: flex-start;
+}
+.app-shell .feedback-redesign .feedback-tabs {
+  margin: 0 0 24px;
+}
+.app-shell .feedback-redesign .feedback-coaching-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(300px, 1fr);
+  gap: 24px;
+  align-items: stretch;
+  scroll-margin-top: 24px;
+}
+.app-shell .feedback-redesign .feedback-coaching-content {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+  min-width: 0;
+}
+.app-shell .feedback-redesign .feedback-coaching-content > section {
+  border: 1px solid #dfe6df;
+  border-radius: 16px;
+  padding: 25px;
+  background: #fff;
+}
+.app-shell .feedback-redesign .feedback-coaching-content .feedback-priority {
+  background: #eff3ee;
+}
+.app-shell .feedback-redesign .feedback-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #e9f0e6;
+  color: #2f5d50;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.app-shell .feedback-redesign .feedback-priority h2 {
+  color: #203b33;
+  font-size: 23px;
+  line-height: 1.6;
+  margin: 12px 0;
+}
+.app-shell .feedback-redesign .feedback-priority p {
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 8px 0 0;
+  color: #354b43;
+}
+.app-shell .feedback-redesign .feedback-priority .feedback-grounding {
+  color: #2f5d50;
+  font-size: 12px;
+}
+.app-shell .feedback-redesign .feedback-coaching-content h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 16px;
+  color: #203b33;
+  margin: 0 0 13px;
+}
+.app-shell .feedback-redesign .feedback-evidence blockquote {
+  border: 0;
+  background: #f7f8f4;
+  border-radius: 15px;
+  margin: 0 0 12px;
+  padding: 15px;
+  color: #354b43;
+  font-size: 14px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.app-shell .feedback-redesign .feedback-evidence .text-button {
+  font-size: 12px;
+  padding: 0;
+}
+.app-shell .feedback-redesign .feedback-empty-evidence,
+.app-shell .feedback-redesign .feedback-strengths p {
+  font-size: 13px;
+  line-height: 1.8;
+  color: #53695b;
+  margin: 6px 0;
+}
+.app-shell .feedback-redesign .practice-next {
+  border: 0;
+  border-radius: 17px;
+  padding: 28px;
+  margin: 0;
+  background: #2f5d50;
+  color: #fff;
+  min-width: 0;
+  box-shadow: none;
+}
+.app-shell .feedback-redesign .practice-next .next-eyebrow {
+  display: block;
+  color: #fff;
+  font-size: 17px;
+  line-height: 1.6;
+  font-weight: 650;
+  margin-bottom: 15px;
+}
+.app-shell .feedback-redesign .practice-next h3 {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 8px 0;
+}
+.app-shell .feedback-redesign .practice-next p {
+  color: #d2e1d7;
+  font-size: 13px;
+  line-height: 1.8;
+  margin: 8px 0 16px;
+}
+.app-shell .feedback-redesign .practice-next fieldset {
+  border: 0;
+  border-top: 1px solid #93b4a1;
+  padding: 16px 0 0;
+  margin: 20px 0;
+  min-width: 0;
+}
+.app-shell .feedback-redesign .practice-next legend {
+  color: #c8dcd0;
+  font-size: 11px;
+  padding-right: 8px;
+}
+.app-shell .feedback-redesign .practice-next label {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 0;
+  border: 0;
+  background: transparent;
+  color: #e1ebe4;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.app-shell .feedback-redesign .practice-next label:has(input:checked) span {
+  color: #fff;
+  font-weight: 600;
+}
+.app-shell .feedback-redesign .practice-next input {
+  margin-top: 6px;
+  accent-color: #c8dfcd;
+  flex-shrink: 0;
+}
+.app-shell .feedback-redesign .next-example > span,
+.app-shell .feedback-redesign .next-example small {
+  display: block;
+  color: #c8dcd0;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.app-shell .feedback-redesign .next-example blockquote {
+  padding: 0;
+  margin: 12px 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 19px;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.app-shell .feedback-redesign .practice-next > .button {
+  width: 100%;
+  background: #fff;
+  color: #2f5d50;
+  border: 0;
+  margin: 24px 0 12px;
+}
+.app-shell .feedback-redesign .practice-next > .button:hover:not(:disabled) {
+  background: #eaf0e8;
+}
+.app-shell .feedback-redesign .practice-next > small {
+  display: block;
+  color: #c8dcd0;
+  font-size: 11px;
+  line-height: 1.9;
+  margin-top: 7px;
+}
+.app-shell .feedback-redesign .practice-next .next-disabled {
+  font-size: 12px;
+  color: #f4e0bc;
+  margin-bottom: 0;
+}
+.app-shell .feedback-redesign .feedback-model-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 26px;
+  font-size: 11px;
+  color: #7a897e;
+  padding: 20px 0;
+}
+.app-shell .feedback-redesign .feedback-model-footer .text-button {
+  font-size: 12px;
+}
+.app-shell .feedback-redesign .feedback-full-analysis {
+  scroll-margin-top: 24px;
+}
+.app-shell .feedback-redesign .report {
+  border: 1px solid #dfe6df;
+  border-radius: 16px;
+  padding: 26px;
+  background: #fff;
+  color: #354b43;
+}
+.app-shell .feedback-redesign .report-label {
+  color: #2f5d50;
+  background: #edf3e9;
+  font-size: 12px;
+}
+.app-shell .feedback-redesign .report h2 {
+  color: #203b33;
+  font-size: 22px;
+}
+.app-shell .feedback-redesign .report-summary {
+  background: transparent;
+  border: 0;
+  color: #647b6b;
+  padding: 0;
+  font-size: 14px;
+}
+.app-shell .feedback-redesign .report-metrics {
+  background: #f4f7f1;
+  border-color: #e4eae0;
+  border-radius: 12px;
+  margin: 20px 0;
+}
+.app-shell .feedback-redesign .report-metrics strong {
+  color: #2f5d50;
+  font-size: 24px;
+}
+.app-shell .feedback-redesign .report-metrics span {
+  color: #7b897f;
+}
+.app-shell .feedback-redesign .report-metrics > div + div {
+  border-color: #dfe6df;
+}
+.app-shell .feedback-redesign .dimension-list article {
+  background: #fff;
+  border-color: #e0e7df;
+  border-radius: 12px;
+  color: #354b43;
+}
+.app-shell .feedback-redesign .dimension-list h3 {
+  color: #203b33;
+}
+.app-shell .feedback-redesign .dimension-list p {
+  color: #647b6b;
+}
+.app-shell .feedback-redesign .dimension-index {
+  background: #edf3e9;
+  color: #2f5d50;
+}
+.app-shell .feedback-redesign .coaching-status {
+  color: #66816e;
+}
+.app-shell .feedback-redesign .coaching-quote {
+  background: #f3f6ef;
+  color: #3f5b49;
+  border-color: #94b39d;
+}
+.app-shell .feedback-redesign .coaching-guide {
+  color: #647b6b;
+  background: #f5f7f2;
+  border-color: #dfe6df;
+}
+.app-shell .feedback-redesign .coaching-guide summary {
+  color: #2f5d50;
+}
+.app-shell .feedback-redesign .improvement,
+.app-shell .feedback-redesign .rewrite {
+  background: #f0f4ec;
+  border-color: #dfe6df;
+  color: #354b43;
+}
+.app-shell .feedback-redesign .improvement h3,
+.app-shell .feedback-redesign .rewrite h3 {
+  color: #2f5d50;
+}
+.app-shell .feedback-redesign .improvement p,
+.app-shell .feedback-redesign .rewrite p,
+.app-shell .feedback-redesign .rewrite small,
+.app-shell .feedback-redesign .disclaimer {
+  color: #647b6b;
+}
+.app-shell .feedback-redesign .feedback-transcript {
+  scroll-margin-top: 24px;
+}
+.app-shell .feedback-redesign .feedback-comparison-section {
+  scroll-margin-top: 24px;
+  margin: 20px 0;
+}
+.app-shell .feedback-redesign .feedback-no-comparison {
+  padding: 20px 24px;
+  border-radius: 13px;
+  background: #eff3ec;
+}
+.app-shell .feedback-redesign .feedback-no-comparison h3 {
+  color: #2f5d50;
+  font-size: 15px;
+  margin: 0 0 8px;
+}
+.app-shell .feedback-redesign .feedback-no-comparison p {
+  color: #728277;
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 0;
+}
+.app-shell .feedback-redesign .attempt-comparison {
+  background: #fff;
+  border: 1px solid #dfe6df;
+  color: #354b43;
+  border-radius: 15px;
+  padding: 24px;
+  margin: 0;
+}
+.app-shell .feedback-redesign .attempt-comparison h3 {
+  color: #203b33;
+  font-size: 18px;
+}
+.app-shell .feedback-redesign .attempt-comparison p {
+  color: #647b6b;
+}
+.app-shell .feedback-redesign .attempt-comparison details {
+  background: #f5f7f2;
+  border-color: #dfe6df;
+}
+.app-shell .feedback-redesign .attempt-comparison summary {
+  color: #2f5d50;
+}
+.app-shell .feedback-redesign .comparison-columns blockquote {
+  color: #3f5b49;
+  background: #eaf0e5;
+  border-color: #94b39d;
+}
+.app-shell .practice-redesign .report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 22px 0 0;
+}
+/* Retain genuine Jev distributions and keep probability distinct from a score. */
+.app-shell .feedback-redesign .jev-visual {
+  border-color: #dfe6df;
+  background: #f8faf5;
+  color: #354b43;
+  border-radius: 15px;
+}
+.app-shell .feedback-redesign .jev-heading h3,
+.app-shell .feedback-redesign .jev-detail h4 {
+  color: #203b33;
+}
+.app-shell .feedback-redesign .jev-eyebrow {
+  color: #2f5d50;
+}
+.app-shell .feedback-redesign .jev-heading small,
+.app-shell .feedback-redesign .jev-help,
+.app-shell .feedback-redesign .jev-detail small {
+  color: #7a897e;
+}
+.app-shell .feedback-redesign .jev-card {
+  background: #fff;
+  border-color: #dfe6df;
+  color: #354b43;
+  box-shadow: none;
+}
+.app-shell .feedback-redesign .jev-card.is-selected {
+  background: #edf3e8;
+  border-color: #7e9e87;
+  box-shadow: none;
+}
+.app-shell .feedback-redesign .jev-detail {
+  background: #fff;
+  border-color: #dfe6df;
+  color: #354b43;
+}
+.app-shell .feedback-redesign .jev-detail p {
+  color: #647b6b;
+}
+.app-shell .feedback-redesign .jev-detail blockquote {
+  background: #f2f6ed;
+  border-color: #94b39d;
+  color: #354b43;
+}
+.app-shell .feedback-redesign .jev-card-top {
+  color: #354b43;
+}
+.app-shell .feedback-redesign .jev-clear {
+  color: #2f6950;
+}
+.app-shell .feedback-redesign .jev-needs_work {
+  color: #987342;
+}
+.app-shell .feedback-redesign .jev-insufficient {
+  color: #7e8880;
+}
+.app-shell .feedback-redesign .jev-fill-clear {
+  background: #608d70;
+}
+.app-shell .feedback-redesign .jev-fill-needs_work {
+  background: #c4ab77;
+}
+.app-shell .feedback-redesign .jev-fill-insufficient {
+  background: #c8d0c7;
+}
+.app-shell .feedback-redesign .jev-distribution {
+  color: #7a897e;
+}
+/* Existing-record editing stays within that record; retries create a new one. */
+.app-shell .saved-practice-redesign .saved-practice-editor {
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #dfe6df;
+  border-radius: 16px;
+  margin: 20px 0;
+  color: #354b43;
+}
+.app-shell .saved-practice-redesign .saved-practice-editor > label {
+  color: #2f5d50;
+}
+.app-shell .saved-practice-redesign .saved-practice-editor > p,
+.app-shell .saved-practice-redesign .saved-practice-editor label > span {
+  color: #7a897e;
+}
+.app-shell .saved-practice-redesign .rule-selector {
+  color: #536c5c;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.app-shell .saved-practice-redesign .rule-selector small {
+  color: #7a897e;
+}
+.app-shell .saved-practice-redesign .saved-record-actions {
+  gap: 10px;
+  margin: 14px 0;
+}
+.app-shell .saved-practice-redesign .center-note {
+  color: #80633d;
+  background: #f6f0e5;
+  padding: 12px;
+  border-radius: 8px;
+}
+.app-shell .practice-redesign .analysis-progress,
+.app-shell .saved-practice-redesign .analysis-progress {
+  color: #536c5c;
+  background: #eaf0e5;
+  border: 1px solid #d5e0d1;
+  padding: 17px;
+  border-radius: 13px;
+  margin: 16px 0;
+}
+.app-shell .practice-redesign .analysis-progress strong,
+.app-shell .saved-practice-redesign .analysis-progress strong {
+  color: #2f5d50;
+  font-size: 13px;
+}
+.app-shell .practice-redesign .analysis-progress p,
+.app-shell .saved-practice-redesign .analysis-progress p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #647b6b;
+}
+.app-shell .practice-redesign .analysis-progress small,
+.app-shell .saved-practice-redesign .analysis-progress small {
+  font-size: 11px;
+  color: #7a897e;
+}
+.app-shell
+  .practice-redesign
+  :is(button, input, textarea, select, summary):focus-visible,
+.app-shell
+  .saved-practice-redesign
+  :is(button, input, textarea, select, summary):focus-visible,
+.app-shell .feedback-redesign :is(button, input, summary):focus-visible {
+  outline: 2px solid #527d60;
+  outline-offset: 3px;
+}
+.app-shell .practice-redesign :is(button:disabled),
+.app-shell .feedback-redesign :is(button:disabled),
+.app-shell .saved-practice-redesign :is(button:disabled) {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+@media (max-width: 1199px) {
+  .app-shell .practice-redesign .practice-workspace {
+    padding: 14px 25px 32px;
+  }
+  .app-shell .practice-redesign .practice-setup-grid,
+  .app-shell .feedback-redesign .feedback-coaching-grid {
+    gap: 18px;
+    grid-template-columns: minmax(0, 1.5fr) minmax(270px, 1fr);
+  }
+  .app-shell .practice-redesign .practice-topic-panel,
+  .app-shell .practice-redesign .practice-setup-panel {
+    padding: 22px;
+  }
+  .app-shell .feedback-redesign .practice-next {
+    padding: 23px;
+  }
+  .app-shell .practice-redesign .practice-local-note {
+    display: none;
+  }
+}
+@media (max-width: 800px) {
+  .app-shell .practice-redesign .practice-workspace {
+    padding: 12px 20px 28px;
+  }
+  .app-shell .practice-redesign .practice-setup-grid,
+  .app-shell .practice-redesign .practice-review-grid,
+  .app-shell .feedback-redesign .feedback-coaching-grid {
+    grid-template-columns: 1fr;
+    gap: 17px;
+  }
+  .app-shell .practice-redesign .practice-masthead {
+    margin-bottom: 20px;
+  }
+  .app-shell .practice-redesign .practice-masthead h1 {
+    font-size: 25px;
+  }
+  .app-shell .practice-redesign .practice-mode-tabs {
+    margin-bottom: 20px;
+    gap: 26px;
+  }
+  .app-shell .practice-redesign .practice-topic-panel {
+    min-height: 0;
+  }
+  .app-shell .practice-redesign .question-card h2 {
+    font-size: 23px;
+  }
+  .app-shell .practice-redesign .practice-topic-panel,
+  .app-shell .practice-redesign .practice-setup-panel,
+  .app-shell .practice-redesign .practice-review-panel,
+  .app-shell .practice-redesign .practice-review-controls {
+    padding: 21px;
+  }
+  .app-shell .practice-redesign .practice-recording-panel {
+    padding: 26px;
+    min-height: 600px;
+  }
+  .app-shell .practice-redesign .session-topic h2 {
+    font-size: 22px;
+  }
+  .app-shell .practice-redesign .practice-setup-footer {
+    gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .app-shell .feedback-redesign .feedback-coaching-content > section {
+    padding: 21px;
+  }
+  .app-shell .feedback-redesign .feedback-priority h2 {
+    font-size: 21px;
+  }
+  .app-shell .feedback-redesign .feedback-tabs {
+    gap: 25px;
+    margin-bottom: 18px;
+  }
+  .app-shell .feedback-redesign .feedback-model-footer {
+    gap: 12px 20px;
+  }
+  .app-shell .feedback-redesign .report {
+    padding: 20px;
+  }
+  .app-shell .feedback-redesign .attempt-comparison {
+    padding: 18px;
+  }
+  .app-shell .feedback-redesign .comparison-columns {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 420px) {
+  .app-shell .practice-redesign .practice-workspace {
+    padding: 10px 16px 24px;
+  }
+  .app-shell .practice-redesign .practice-masthead h1 {
+    font-size: 24px;
+  }
+  .app-shell .practice-redesign .practice-topic-panel,
+  .app-shell .practice-redesign .practice-setup-panel {
+    padding: 18px;
+  }
+  .app-shell .practice-redesign .mini-steps {
+    gap: 7px;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  }
+  .app-shell .practice-redesign .mini-steps > span {
+    padding: 11px;
+    font-size: 12px;
+  }
+  .app-shell .practice-redesign .word-card > span {
+    font-size: 21px;
+    padding: 12px;
+  }
+  .app-shell .feedback-redesign .feedback-tabs {
+    gap: 19px;
+  }
+  .app-shell .feedback-redesign .feedback-tabs button {
+    font-size: 13px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .practice-redesign *,
+  .app-shell .feedback-redesign * {
+    scroll-behavior: auto;
+    animation-duration: 0.01ms;
+    transition-duration: 0.01ms;
+  }
+}

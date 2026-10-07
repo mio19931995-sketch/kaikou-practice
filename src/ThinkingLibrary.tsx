@@ -1,38 +1,49 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import {
   ArrowRight,
   BookmarkSimple,
+  Check,
   MagnifyingGlass,
-  BookOpen,
 } from "@phosphor-icons/react";
 import { BottomNav, Header, go, setNavigationGuard } from "./components";
 import { thinkingCategories, thinkingModels } from "./thinkingData";
-import "./thinking.css";
-import { ThinkingLesson } from "./ThinkingLesson";
+import { ThinkingLesson, openGroup } from "./ThinkingLesson";
 import { frameworks } from "./data";
 import {
   advancedIds,
   isProgress,
   learningPath,
   reviewState,
-  sayLayer,
   stateLabel,
-  thinkLayer,
   type Progress,
 } from "./thinkingPath";
 import { thinkingPractice } from "./thinkingPractice";
 import { ThinkingSources } from "./ThinkingApplications";
 import type { Session } from "./types";
+import "./thinking.css";
 
 const storageKey = "kaikou.thinking.v1";
+const coreIds = [
+  "first-principles",
+  "pyramid",
+  "opportunity",
+  "inversion",
+  "second-order",
+  "sbi",
+];
 type Notebook = {
   favorites: string[];
   notes: Record<string, string>;
   progress?: Record<string, Progress>;
+  lastOpened?: string;
 };
 const structureName = (id: string) =>
   frameworks.find((f) => f.id === id)?.name || id;
-const baseStructures = frameworks.slice(0, 8);
+const modelsById = (ids: string[]) =>
+  ids
+    .map((id) => thinkingModels.find((m) => m.id === id))
+    .filter((m): m is (typeof thinkingModels)[number] => Boolean(m));
 function readNotebook(): { value: Notebook; error: string } {
   try {
     const raw = localStorage.getItem(storageKey);
@@ -49,7 +60,8 @@ function readNotebook(): { value: Notebook; error: string } {
         (!parsed.progress ||
           typeof parsed.progress !== "object" ||
           Array.isArray(parsed.progress) ||
-          !Object.values(parsed.progress).every(isProgress)))
+          !Object.values(parsed.progress).every(isProgress))) ||
+      (parsed.lastOpened !== undefined && typeof parsed.lastOpened !== "string")
     )
       throw new Error("invalid");
     return { value: parsed, error: "" };
@@ -65,15 +77,18 @@ function readNotebook(): { value: Notebook; error: string } {
 export function ThinkingLibrary({
   modelId,
   sessions,
+  navigation,
 }: {
   modelId: string | null;
   sessions: Session[];
+  navigation?: ReactNode;
 }) {
   const [initial] = useState(readNotebook);
   const [notebook, setNotebook] = useState(initial.value);
   const [error, setError] = useState(initial.error);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("全部");
+  const [path, setPath] = useState<string | null>(null);
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const model = thinkingModels.find((m) => m.id === modelId);
   const update = (next: Notebook): boolean => {
@@ -97,75 +112,114 @@ export function ThinkingLibrary({
         ? notebook.favorites.filter((x) => x !== id)
         : [...notebook.favorites, id],
     });
+  const openModel = (id: string) => {
+    // Visiting is recorded separately from learning, practice, and review.
+    update({ ...notebook, lastOpened: id });
+    go(`/thinking?model=${id}`);
+  };
   const progress = notebook.progress || {};
   const setProgress = (id: string, next: Progress) =>
     update({ ...notebook, progress: { ...progress, [id]: next } });
+  const practiced = (id: string) =>
+    sessions.some(
+      (s) =>
+        s.thinkingModelId === id &&
+        (s.audio || s.transcript.trim().length >= 5),
+    );
   const statusOf = (id: string) => reviewState(progress[id]);
   const dueModels = thinkingModels.filter(
     (m) => statusOf(m.id).state === "due",
   );
-  const filtered =
-    Boolean(query.trim()) || category !== "全部" || onlyFavorites;
-  const card = (m: (typeof thinkingModels)[number]) => {
-    const st = statusOf(m.id).state;
-    return (
-      <article className="thinking-card" key={m.id}>
-        <div className="thinking-card-top">
-          <span>{m.category}</span>
-          <span className="thinking-card-status">
-            {sessions.some(
-              (s) =>
-                s.thinkingModelId === m.id &&
-                (s.audio || s.transcript.trim().length >= 5),
-            ) && <em className="status-chip">已练</em>}
-            <em className={`status-chip is-${st}`}>{stateLabel[st]}</em>
-            <button
-              aria-label={`${notebook.favorites.includes(m.id) ? "取消收藏" : "收藏"}${m.name}`}
-              aria-pressed={notebook.favorites.includes(m.id)}
-              onClick={() => favorite(m.id)}
-            >
-              <BookmarkSimple
-                size={22}
-                weight={notebook.favorites.includes(m.id) ? "fill" : "regular"}
-              />
-            </button>
-          </span>
-        </div>
-        <a
-          href={`#/thinking?model=${m.id}`}
-          onClick={(e) => {
-            e.preventDefault();
-            go(`/thinking?model=${m.id}`);
-          }}
-        >
-          <h2>{m.question}</h2>
-          <p>{m.summary}</p>
-          <div className="thinking-card-bottom">
-            <strong>{m.name}</strong>
-            <ArrowRight size={20} />
-          </div>
-        </a>
-      </article>
-    );
-  };
-  const byId = (ids: string[]) =>
-    ids
-      .map((id) => thinkingModels.find((m) => m.id === id))
-      .filter((m): m is (typeof thinkingModels)[number] => Boolean(m));
+  const selectedPath = learningPath.find((unit) => unit.title === path);
   const needle = query.trim().toLocaleLowerCase();
+  const filtered =
+    Boolean(needle) ||
+    category !== "全部" ||
+    onlyFavorites ||
+    Boolean(selectedPath);
   const matches = thinkingModels.filter(
     (m) =>
       (category === "全部" || m.category === category) &&
+      (!selectedPath || selectedPath.models.includes(m.id)) &&
       (!onlyFavorites || notebook.favorites.includes(m.id)) &&
       [m.name, m.category, m.question, m.summary, m.when, m.example]
         .join(" ")
         .toLocaleLowerCase()
         .includes(needle),
   );
+  const recommendation =
+    dueModels[0] ||
+    thinkingModels.find((m) => m.id === notebook.lastOpened) ||
+    thinkingModels.find((m) => m.id === "pyramid")!;
+  const recommendationPath = learningPath.find((unit) =>
+    unit.models.includes(recommendation.id),
+  );
+  const recommendationDue = statusOf(recommendation.id).state === "due";
+  const continued = notebook.lastOpened === recommendation.id;
+  const displayStatus = (id: string) => {
+    const state = statusOf(id).state;
+    const count = progress[id]?.reviews?.length || 0;
+    return state === "reviewed" || state === "mastered"
+      ? `已复习 ${count} 次`
+      : stateLabel[state];
+  };
+  const card = (m: (typeof thinkingModels)[number]) => (
+    <article className="thinking-card" key={m.id}>
+      <a
+        href={`#/thinking?model=${m.id}`}
+        onClick={(event) => {
+          event.preventDefault();
+          openModel(m.id);
+        }}
+      >
+        <div className="thinking-card-heading">
+          <span className="thinking-card-number">
+            {String(
+              (coreIds.includes(m.id) ? coreIds : advancedIds).indexOf(m.id) +
+                (coreIds.includes(m.id) ? 1 : 7),
+            ).padStart(2, "0")}
+          </span>
+          <h2>{m.name}</h2>
+        </div>
+        <p>{m.summary}</p>
+        <span className="thinking-card-bottom">
+          {m.category} · 快速理解 + 开口迁移 <ArrowRight size={15} />
+        </span>
+      </a>
+      <div className="thinking-card-meta">
+        <span className="thinking-card-status">
+          {progress[m.id]?.learnedAt && (
+            <em className="status-chip is-learned">已学</em>
+          )}
+          {practiced(m.id) && <em className="status-chip">已练</em>}
+          {(statusOf(m.id).state === "due" ||
+            (progress[m.id]?.reviews?.length || 0) > 0) && (
+            <em className={`status-chip is-${statusOf(m.id).state}`}>
+              {displayStatus(m.id)}
+            </em>
+          )}
+        </span>
+        <button
+          className="thinking-bookmark"
+          aria-label={`${notebook.favorites.includes(m.id) ? "取消收藏" : "收藏"}${m.name}`}
+          aria-pressed={notebook.favorites.includes(m.id)}
+          onClick={() => favorite(m.id)}
+        >
+          <BookmarkSimple
+            size={19}
+            weight={notebook.favorites.includes(m.id) ? "fill" : "regular"}
+          />
+        </button>
+      </div>
+    </article>
+  );
   return (
     <>
-      <Header title="思维框架" back={modelId ? "/thinking" : "/"} />
-      <main className="thinking-page">
+      <Header
+        title={model ? model.name : "方法学习"}
+        back={modelId ? "/thinking" : "/"}
+      />
+      <main className={`thinking-page ${model ? "is-lesson" : "is-library"}`}>
         {error && (
           <p className="thinking-error" role="alert">
             {error}
@@ -183,132 +237,60 @@ export function ThinkingLibrary({
           </section>
         ) : model ? (
           <>
-            <button className="thinking-back" onClick={() => go("/thinking")}>
-              ← 全部思维框架
-            </button>
             <div className="thinking-detail-heading">
-              <div>
-                <span className="thinking-eyebrow">
-                  {model.category} · 方法指南
+              <h1>{model.name}</h1>
+              <div className="thinking-breadcrumb">
+                <button
+                  className="thinking-back"
+                  aria-label="← 全部思维框架"
+                  onClick={() => go("/thinking")}
+                >
+                  方法学习
+                </button>
+                <span>/</span>
+                <button onClick={() => go("/thinking")}>思维框架</button>
+                <span>/</span>
+                <span>
+                  {learningPath.find((unit) => unit.models.includes(model.id))
+                    ?.title || model.category}
                 </span>
-                <h1>{model.name}</h1>
-                <p>{model.summary}</p>
               </div>
-              <button
-                className="thinking-save"
-                aria-pressed={notebook.favorites.includes(model.id)}
-                onClick={() => favorite(model.id)}
-              >
-                <BookmarkSimple
-                  size={20}
-                  weight={
-                    notebook.favorites.includes(model.id) ? "fill" : "regular"
-                  }
-                />
-                {notebook.favorites.includes(model.id) ? "已收藏" : "收藏框架"}
-              </button>
             </div>
             <div className="thinking-detail-grid">
               <article className="thinking-article">
                 <section id="lesson-quick" className="quick-card">
-                  <div className="quick-card-head">
-                    <span className="thinking-eyebrow">
-                      速用卡 · 先了解用法
-                    </span>
-                    <em
-                      className={`status-chip is-${statusOf(model.id).state}`}
-                    >
-                      {stateLabel[statusOf(model.id).state]}
-                    </em>
+                  <span className="thinking-eyebrow">一句话理解</span>
+                  <h2>{model.summary}</h2>
+                  <div className="quick-when">
+                    <h3>什么时候用</h3>
+                    <p>{model.when}</p>
                   </div>
-                  <h3>是什么</h3>
-                  <p>{model.summary}</p>
-                  <h2>什么时候用</h2>
-                  <p>{model.when}</p>
-                  <h3>{model.steps.length} 步用起来</h3>
-                  <ol className="thinking-steps">
-                    {model.steps.map((step, i) => (
-                      <li key={step}>
-                        <span>{String(i + 1).padStart(2, "0")}</span>
-                        <p>{step}</p>
-                      </li>
-                    ))}
-                  </ol>
-                  {!!thinkingPractice[model.id]?.template.length && (
-                    <>
-                      <h3>填空模板</h3>
-                      <ul className="quick-template">
-                        {thinkingPractice[model.id].template.map((t) => (
-                          <li key={t}>{t.replace(/[：:]$/, "")}：＿＿＿＿</li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                  <h3>一个例子</h3>
-                  <p className="quick-example">{model.example}</p>
-                  <div className="thinking-boundary">
-                    <strong>使用边界</strong>
-                    <p>{model.limit}</p>
-                  </div>
-                  {!progress[model.id]?.learnedAt && (
-                    <button
-                      className="button secondary quick-learned"
-                      onClick={() =>
-                        setProgress(model.id, {
-                          ...progress[model.id],
-                          learnedAt: new Date().toISOString(),
-                        })
-                      }
-                    >
-                      我看懂了，3 天后提醒我复习
-                    </button>
-                  )}
                 </section>
                 <ThinkingLesson key={model.id} id={model.id} />
                 <details className="lesson-group" id="lesson-group-mistake">
                   <summary>
-                    <span>补充</span>随用随查：容易用错的地方
+                    <span>使用边界</span>哪些时候需要多想一步
                   </summary>
-                  <p>{model.mistake}</p>
+                  <p>{model.limit}</p>
+                  <div className="thinking-boundary">
+                    <strong>容易用错的地方</strong>
+                    <p>{model.mistake}</p>
+                  </div>
                 </details>
                 <details className="lesson-group" id="lesson-sources-group">
                   <summary>
-                    <span>补充</span>资料依据与延伸阅读
+                    <span>参考来源</span>资料依据与延伸阅读
                   </summary>
                   <ThinkingSources id={model.id} />
                 </details>
-                <ReviewBlock
-                  progress={progress[model.id]}
-                  revisit={thinkingPractice[model.id]?.revisit || ""}
-                  save={(next) => setProgress(model.id, next)}
-                />
-                <section className="speak-entry" id="lesson-speak">
-                  <span className="thinking-eyebrow">
-                    ④ 说出来 · 想清楚之后
-                  </span>
-                  <h2>用这个框架说 60 秒</h2>
-                  <p>
-                    带着本课的应用题和步骤开口。Agnes 将检查「{model.name}
-                    」的运用依据与适用条件，思考笔记不会自动提交。
-                  </p>
-                  <button
-                    className="button primary"
-                    onClick={() => {
-                      go(`/practice/logic?thinking=${model.id}`);
-                    }}
-                  >
-                    用这个框架说 60 秒
-                  </button>
-                  <small>
-                    默认 60 秒，可选择 30 / 90 / 180
-                    秒。保存完成的练习后才显示“已练”；也可继续只做书面学习。
-                  </small>
-                </section>
               </article>
-              <aside className="thinking-notebook">
-                <span className="thinking-eyebrow">把方法用在自己的事情上</span>
-                <h2>我的思考笔记</h2>
-                <p>{model.prompt}</p>
+              <aside className="thinking-notebook" aria-label="学习笔记与复习">
+                <h2>我的学习笔记</h2>
+                <p className="notebook-privacy">
+                  笔记只保存在本机，不自动提交 AI
+                </p>
+                <div className="notebook-divider" />
+                <p className="notebook-prompt">{model.prompt}</p>
                 <ModelNote
                   key={model.id}
                   template={thinkingPractice[model.id]?.template || []}
@@ -320,198 +302,202 @@ export function ThinkingLibrary({
                     })
                   }
                 />
-                <small>
-                  仅保存到此设备，不会发送给 AI。可独立学习，无需录音。
-                </small>
+                <div className="notebook-actions">
+                  <button
+                    className="thinking-save"
+                    aria-pressed={notebook.favorites.includes(model.id)}
+                    onClick={() => favorite(model.id)}
+                  >
+                    <BookmarkSimple
+                      size={16}
+                      weight={
+                        notebook.favorites.includes(model.id)
+                          ? "fill"
+                          : "regular"
+                      }
+                    />
+                    {notebook.favorites.includes(model.id)
+                      ? "已收藏"
+                      : "收藏框架"}
+                  </button>
+                  <button
+                    className="thinking-save"
+                    aria-pressed={Boolean(progress[model.id]?.learnedAt)}
+                    disabled={Boolean(progress[model.id]?.learnedAt)}
+                    onClick={() =>
+                      setProgress(model.id, {
+                        ...progress[model.id],
+                        learnedAt: new Date().toISOString(),
+                      })
+                    }
+                  >
+                    <Check size={16} />
+                    {progress[model.id]?.learnedAt ? "已标为已学" : "标为已学"}
+                  </button>
+                </div>
+                <ReviewBlock
+                  progress={progress[model.id]}
+                  practiced={practiced(model.id)}
+                  revisit={thinkingPractice[model.id]?.revisit || ""}
+                  save={(next) => setProgress(model.id, next)}
+                />
+                <div className="notebook-sources">
+                  <h3>参考来源</h3>
+                  <a href={model.url} target="_blank" rel="noreferrer">
+                    {model.source} ↗
+                  </a>
+                  <button onClick={() => openGroup("sources", "sources")}>
+                    查看出处与适用边界 →
+                  </button>
+                </div>
               </aside>
             </div>
           </>
         ) : (
           <>
             <section className="thinking-hero">
-              <div>
-                <span className="thinking-eyebrow">
-                  想清楚 → 说清楚 → 说出来
-                </span>
-                <h1>
-                  遇到问题，
-                  <br />
-                  换一种思考方式。
-                </h1>
-                <p>
-                  从你正在面对的事出发，找到适合的方法。
-                  <br />
-                  每课先给一张速用卡，学完直接用它说 60 秒，过几天再回来复习。
-                </p>
-              </div>
-              <div className="thinking-hero-note">
-                <BookOpen size={30} />
-                <strong>{thinkingModels.length} 个精选框架</strong>
-                <span>主路径 6 个 · 进阶 6 个</span>
-                <small>每课含填写模板、参考思路与资料依据。</small>
-              </div>
+              <h1>把方法学会，也把它说出来</h1>
+              <p>不是记住更多名词，而是在真实问题里用上一个方法</p>
             </section>
-            <div className="thinking-tools">
-              <label className="thinking-search">
-                <MagnifyingGlass size={22} />
-                <input
-                  aria-label="搜索思维框架"
-                  placeholder="搜问题或方法，例如：决策、风险、反馈"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </label>
-              <button
-                className="thinking-save"
-                aria-pressed={onlyFavorites}
-                onClick={() => setOnlyFavorites(!onlyFavorites)}
-              >
-                <BookmarkSimple size={20} />
-                我的收藏 {notebook.favorites.length}
+            {navigation}
+            <div className="thinking-path-filters" aria-label="学习路径">
+              <button aria-pressed={!path} onClick={() => setPath(null)}>
+                全部框架
               </button>
-            </div>
-            <div className="thinking-filters" aria-label="框架分类">
-              {thinkingCategories.map((c) => (
+              {learningPath.map((unit) => (
                 <button
-                  key={c}
-                  aria-pressed={category === c}
-                  onClick={() => setCategory(c)}
+                  key={unit.title}
+                  aria-pressed={path === unit.title}
+                  onClick={() => setPath(unit.title)}
                 >
-                  {c}
+                  {unit.title}
                 </button>
               ))}
             </div>
-            <p className="thinking-count" role="status">
-              {matches.length} 个框架
-              {onlyFavorites
-                ? " · 仅显示已收藏"
-                : filtered
-                  ? " · 选择一个你正在遇到的问题"
-                  : " · 按「想清楚 → 说清楚 → 说出来」排列"}
-            </p>
-            {filtered ? (
-              <div className="thinking-cards">
-                {matches.map((m) => card(m))}
+            {!filtered && (
+              <section className="thinking-continue">
+                <div>
+                  <span className="thinking-eyebrow">
+                    {recommendationDue
+                      ? "在遗忘前，再用一次"
+                      : continued
+                        ? "继续学习"
+                        : "从这里开始"}{" "}
+                    / {recommendationPath?.title || recommendation.category}
+                  </span>
+                  <h2>
+                    {recommendation.name}：{recommendation.question}
+                  </h2>
+                  <p>
+                    {recommendationDue
+                      ? `已有 ${progress[recommendation.id]?.reviews?.length || 0} 次复习记录 · 这次带着一个真实问题再用一次`
+                      : continued
+                        ? "上次打开的框架 · 看一个例子，再试一道判断题"
+                        : "从一条清楚的结论开始 · 看例子、做判断，再开口练一次"}
+                  </p>
+                </div>
+                <button
+                  className="button primary"
+                  onClick={() => openModel(recommendation.id)}
+                >
+                  {recommendationDue
+                    ? "去复习"
+                    : continued
+                      ? "继续学习"
+                      : "开始学习"}
+                  <ArrowRight size={18} />
+                </button>
+              </section>
+            )}
+            {dueModels.length > 0 && (
+              <section className="review-banner" role="status">
+                <strong>{dueModels.length} 个框架待复习</strong>
+                {dueModels.map((m) => (
+                  <button key={m.id} onClick={() => openModel(m.id)}>
+                    {m.name} →
+                  </button>
+                ))}
+              </section>
+            )}
+            <div className="thinking-list-heading">
+              <h2>
+                {filtered
+                  ? selectedPath?.title || "找到适合你的方法"
+                  : "六个常用框架"}
+              </h2>
+              <div className="thinking-tools">
+                <label className="thinking-search">
+                  <MagnifyingGlass size={17} />
+                  <input
+                    aria-label="搜索思维框架"
+                    placeholder="搜索方法或问题"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                  />
+                </label>
+                <button
+                  className="thinking-save"
+                  aria-pressed={onlyFavorites}
+                  onClick={() => setOnlyFavorites(!onlyFavorites)}
+                >
+                  <BookmarkSimple size={17} />
+                  我的收藏 {notebook.favorites.length}
+                </button>
               </div>
+            </div>
+            {selectedPath && (
+              <section className="thinking-path-detail">
+                <p>
+                  先理解方法，再按你的沟通目的选择表达结构，最后说一次、过几天再复习。
+                </p>
+                <div className="path-nodes">
+                  {selectedPath.structures.map((id) => (
+                    <button
+                      key={id}
+                      className="path-node"
+                      onClick={() => go(`/structures?framework=${id}`)}
+                    >
+                      {structureName(id)}
+                      <span>表达结构 ↗</span>
+                    </button>
+                  ))}
+                  <button
+                    className="path-node is-practice"
+                    onClick={() =>
+                      go(`/practice/logic?thinking=${selectedPath.models[0]}`)
+                    }
+                  >
+                    用本单元框架说 60 秒 <ArrowRight size={16} />
+                  </button>
+                </div>
+              </section>
+            )}
+            {filtered ? (
+              <>
+                <p className="thinking-count" role="status">
+                  找到 {matches.length} 个框架
+                  {onlyFavorites ? " · 仅显示已收藏" : ""}
+                </p>
+                <div className="thinking-cards">{matches.map(card)}</div>
+              </>
             ) : (
               <>
-                {dueModels.length > 0 && (
-                  <section className="review-banner" role="status">
-                    <strong>今天该复习 {dueModels.length} 个</strong>
-                    {dueModels.map((m) => (
-                      <button
-                        key={m.id}
-                        onClick={() => go(`/thinking?model=${m.id}`)}
-                      >
-                        {m.name} →
-                      </button>
-                    ))}
-                  </section>
-                )}
-                <section className="thinking-path" aria-label="学习路径">
-                  <h2>学习路径 · 从最常用开始</h2>
-                  <ol>
-                    {learningPath.map((unit, i) => (
-                      <li key={unit.title} className="path-unit">
-                        <span className="path-no">单元 {i + 1}</span>
-                        <h3>{unit.title}</h3>
-                        <div className="path-nodes">
-                          {byId(unit.models).map((m) => (
-                            <button
-                              key={m.id}
-                              className="path-node"
-                              onClick={() => go(`/thinking?model=${m.id}`)}
-                            >
-                              {m.name}
-                              <em>{stateLabel[statusOf(m.id).state]}</em>
-                            </button>
-                          ))}
-                          {unit.structures.map((id) => (
-                            <button
-                              key={id}
-                              className="path-node is-structure"
-                              onClick={() => go("/logic")}
-                            >
-                              {structureName(id)}
-                              <em>表达结构</em>
-                            </button>
-                          ))}
-                          <button
-                            className="path-node is-practice"
-                            onClick={() =>
-                              go(`/practice/logic?thinking=${unit.models[0]}`)
-                            }
-                          >
-                            说 60 秒<em>练习</em>
-                          </button>
-                          <span className="path-node is-review">
-                            复习
-                            <em>
-                              {unit.models.some(
-                                (id) => statusOf(id).state === "due",
-                              )
-                                ? "有待复习"
-                                : "学完 3 天后"}
-                            </em>
-                          </span>
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
-                </section>
-                <section className="thinking-layer">
-                  <div className="layer-head">
-                    <span>第 1 层</span>
-                    <h2>想清楚 · 思维框架</h2>
-                    <p>先弄明白问题和选择，再决定要说什么。</p>
-                  </div>
-                  <div className="thinking-cards">
-                    {byId(thinkLayer).map((m) => card(m))}
-                  </div>
-                </section>
-                <section className="thinking-layer">
-                  <div className="layer-head">
-                    <span>第 2 层</span>
-                    <h2>说清楚 · 表达结构</h2>
-                    <p>
-                      思维方法与表达结构各有用途。可以按任务选择，它们并非一一对应，也不需要每次套同一种格式。
-                    </p>
-                  </div>
-                  <div className="thinking-cards">
-                    {byId(sayLayer).map((m) => card(m))}
-                  </div>
-                  <div className="layer-structures" aria-label="逻辑表达结构">
-                    {baseStructures.map((f) => (
-                      <button key={f.id} onClick={() => go("/logic")}>
-                        {f.name}
-                        <small>{f.steps.join(" → ")}</small>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-                <section className="thinking-layer is-speak">
-                  <div className="layer-head">
-                    <span>第 3 层</span>
-                    <h2>说出来 · 开口练习</h2>
-                    <p>
-                      每课末尾都有「用这个框架说 60
-                      秒」：自动带入对应的表达结构进入练习，点评按结构逐项检查。
-                    </p>
-                  </div>
-                  <button
-                    className="button primary"
-                    onClick={() => go("/practice/logic")}
-                  >
-                    直接去说 60 秒
-                  </button>
-                </section>
+                <div className="thinking-cards">
+                  {modelsById(coreIds).map(card)}
+                </div>
                 <details className="thinking-advanced">
                   <summary>
-                    进阶 / 延伸 · {advancedIds.length} 个
-                    <small>保留完整内容，不在新手路径里强推</small>
+                    <span>
+                      进阶框架 · 继续探索 <ArrowRight size={17} />
+                    </span>
+                    <small>
+                      {modelsById(advancedIds)
+                        .map((m) => m.name)
+                        .join(" / ")}
+                    </small>
                   </summary>
                   <div className="thinking-cards">
-                    {byId(advancedIds).map((m) => card(m))}
+                    {modelsById(advancedIds).map(card)}
                   </div>
                 </details>
               </>
@@ -527,6 +513,7 @@ export function ThinkingLibrary({
                   onClick={() => {
                     setQuery("");
                     setCategory("全部");
+                    setPath(null);
                     setOnlyFavorites(false);
                   }}
                 >
@@ -534,6 +521,23 @@ export function ThinkingLibrary({
                 </button>
               </div>
             )}
+            <details className="thinking-category-filter">
+              <summary>按问题分类筛选</summary>
+              <div className="thinking-filters" aria-label="框架分类">
+                {thinkingCategories.map((c) => (
+                  <button
+                    key={c}
+                    aria-pressed={category === c}
+                    onClick={() => setCategory(c)}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </details>
+            <p className="thinking-library-footnote">
+              12 个框架 · 4 条学习路径 · 学习、练习与复习分别记录在本机
+            </p>
           </>
         )}
       </main>
@@ -553,6 +557,8 @@ function ModelNote({
 }) {
   const [note, setNote] = useState(saved);
   const [message, setMessage] = useState("");
+  const saveRef = useRef(save);
+  saveRef.current = save;
   useEffect(() => {
     if (note === saved) return;
     setNavigationGuard(() => window.confirm("笔记尚未保存，确定离开吗？"));
@@ -568,8 +574,37 @@ function ModelNote({
   }, [note, saved]);
   return (
     <>
+      <label htmlFor="thinking-note">我的问题与下一步</label>
+      <textarea
+        id="thinking-note"
+        value={note}
+        maxLength={6000}
+        placeholder={"记下一个你能用到的场景……\n先写自己的判断，再检查依据。"}
+        onChange={(event) => {
+          setNote(event.target.value);
+          setMessage("尚未保存");
+        }}
+      />
+      <div className="thinking-note-actions">
+        <button
+          className="note-save"
+          onClick={() =>
+            setMessage(
+              saveRef.current(note)
+                ? "已保存到本机"
+                : "保存失败，请保留此页面并复制备份",
+            )
+          }
+        >
+          保存笔记
+        </button>
+        <span>{note.length}/6000</span>
+      </div>
+      <p className="thinking-note-status" role="status">
+        {message || (saved ? "已有本地笔记" : "写下想法后，点击保存笔记。")}
+      </p>
       <button
-        className="button secondary note-template"
+        className="note-template"
         onClick={() => {
           const addition = "【本课应用模板】\n" + template.join("\n") + "\n";
           const next = note ? `${note}\n\n${addition}` : addition;
@@ -584,43 +619,18 @@ function ModelNote({
       >
         将本课模板加入笔记
       </button>
-      <label htmlFor="thinking-note">我的问题与下一步</label>
-      <textarea
-        id="thinking-note"
-        value={note}
-        maxLength={6000}
-        placeholder={"我遇到的问题是……\n我可以先尝试……\n还需要确认……"}
-        onChange={(e) => {
-          setNote(e.target.value);
-          setMessage("尚未保存");
-        }}
-      />
-      <div className="thinking-note-actions">
-        <button
-          className="button primary"
-          onClick={() =>
-            setMessage(
-              save(note) ? "已保存到本机" : "保存失败，请保留此页面并复制备份",
-            )
-          }
-        >
-          保存笔记
-        </button>
-        <span>{note.length}/6000</span>
-      </div>
-      <p className="thinking-note-status" role="status">
-        {message || (saved ? "已有本地笔记" : "写下想法后，点击保存笔记。")}
-      </p>
     </>
   );
 }
 
 function ReviewBlock({
   progress,
+  practiced,
   revisit,
   save,
 }: {
   progress?: Progress;
+  practiced: boolean;
   revisit: string;
   save: (next: Progress) => boolean;
 }) {
@@ -628,30 +638,51 @@ function ReviewBlock({
   const reviews = progress?.reviews || [];
   return (
     <section className="review-block" id="lesson-review">
-      <span className="thinking-eyebrow">过几天复习</span>
-      <h2>过几天，带着结果再回来</h2>
-      <p>{revisit}</p>
-      <p className="review-state">
-        状态：<em className={`status-chip is-${state}`}>{stateLabel[state]}</em>
-        {state === "new" && " · 看懂速用卡后点「我看懂了」，3 天后提醒复习。"}
-        {(state === "learned" || state === "reviewed") &&
-          ` · 下次复习：${new Date(dueAt).toLocaleDateString("zh-CN")}`}
-        {state === "mastered" &&
-          " · 这是复习记录，不代表已经掌握；可以随时再练。"}
+      <h2>在遗忘前，再用一次</h2>
+      <p>
+        学完 3 天后：第一次复习
+        <br />
+        此后每次复习 7 天后：再次复习
       </p>
-      {state === "due" && progress && (
-        <button
-          className="button secondary"
-          onClick={() =>
-            save({
-              ...progress,
-              reviews: [...reviews, new Date().toISOString()],
-            })
-          }
+      <div className="review-state">
+        <span
+          className={`status-chip ${progress?.learnedAt ? "is-learned" : ""}`}
         >
-          我复习过了（用它再说一次后点这里）
-        </button>
+          {progress?.learnedAt ? "已学" : "未学"}
+        </span>
+        <span className="status-chip">{practiced ? "已练" : "未练"}</span>
+        <span className={`status-chip is-${state}`}>
+          {reviews.length ? `已复习 ${reviews.length} 次` : "未复习"}
+        </span>
+      </div>
+      {dueAt > 0 && (
+        <p className={`review-next ${state === "due" ? "is-due" : ""}`}>
+          {state === "due" ? "本次复习已到期" : "下次复习"} ·{" "}
+          {new Date(dueAt).toLocaleDateString("zh-CN")}
+        </p>
       )}
+      {state === "new" && (
+        <p className="review-note">
+          点「标为已学」后记录首次复习日期；复习提醒显示在应用内。
+        </p>
+      )}
+      {state === "due" && progress && (
+        <>
+          <p className="review-task">{revisit}</p>
+          <button
+            className="button secondary"
+            onClick={() =>
+              save({
+                ...progress,
+                reviews: [...reviews, new Date().toISOString()],
+              })
+            }
+          >
+            我复习过了
+          </button>
+        </>
+      )}
+      <small>已学、已练与复习次数分别记录，不代表已经掌握。</small>
     </section>
   );
 }

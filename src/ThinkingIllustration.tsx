@@ -29,6 +29,7 @@ export function ThinkingIllustration({ id }: { id: string }) {
           <img
             src={source}
             alt={`${model.name}知识图：${model.summary} 图中包含步骤、应用案例与使用提醒。`}
+            loading="lazy"
             onError={() => setFailed(true)}
           />
           <span>点击放大 · 查看流程与案例 ↗</span>

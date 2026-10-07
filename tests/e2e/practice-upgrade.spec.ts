@@ -27,6 +27,7 @@ for (const width of [390, 1280]) {
     await page.getByRole('button', { name: '用这份提纲进行文字练习' }).click();
     await expect(page.getByLabel('我的表达')).toHaveValue(/入口照片/);
     await page.getByRole('button', { name: '仅保存练习', exact: true }).click();
+    await expect(page).toHaveURL(/#\/history$/);
     await page.goto('/#/thinking');
     await page.getByLabel('搜索思维框架').fill('SBI');
     await expect(page.locator('.thinking-card')).toContainText('已练');

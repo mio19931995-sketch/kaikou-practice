@@ -290,3 +290,10 @@ test("AI recovery distinguishes transport failure, timeout and invalid output wi
     });
   }
 });
+
+test("explicit AI request never silently downgrades to basic feedback", async () => {
+ await serve({env:{}}, async base => {
+  const response = await fetch(`${base}/api/analyze`, {method:'POST',headers:{'Content-Type':'application/json','X-Kaikou-Require-AI':'1'},body:JSON.stringify(sample)});
+  assert.equal(response.status,503); const result=await response.json(); assert.match(result.error,/不会改用基础反馈/); assert.equal(result.source,undefined);
+ });
+});
