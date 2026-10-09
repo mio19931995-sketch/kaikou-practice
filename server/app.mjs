@@ -79,6 +79,10 @@ export function createApp({
           });
       return res.json(basicFeedback(input));
     }
+    // 「查看基础反馈」：即使已配置 AI key，也按本地 basicFeedback 返回，不打上游。
+    if (req.get("X-Kaikou-Require-AI") === "0") {
+      return res.json(basicFeedback(input));
+    }
     try {
       // DeepSeek's current API defaults to thinking mode. For a short, structured
       // coaching response, explicitly disable it and request JSON output.

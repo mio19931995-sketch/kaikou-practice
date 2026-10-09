@@ -297,3 +297,48 @@ test("explicit AI request never silently downgrades to basic feedback", async ()
   assert.equal(response.status,503); const result=await response.json(); assert.match(result.error,/不会改用基础反馈/); assert.equal(result.source,undefined);
  });
 });
+
+test("X-Kaikou-Require-AI: 0 forces basicFeedback even when AI keys are configured", async () => {
+  let upstreamCalled = false;
+  await serve(
+    {
+      env: {
+        AI_API_KEY: "test-key",
+        AI_BASE_URL: "https://provider.example/v1",
+        AI_MODEL: "model",
+      },
+      fetcher: async () => {
+        upstreamCalled = true;
+        return Response.json({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  summary: "不应走到 AI。",
+                  dimensions: [{ title: "结构", text: "不应出现。" }],
+                  improvements: ["不应出现。"],
+                  rewrite: "不应出现。",
+                }),
+              },
+            },
+          ],
+        });
+      },
+    },
+    async (base) => {
+      const response = await fetch(`${base}/api/analyze`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Kaikou-Require-AI": "0",
+        },
+        body: JSON.stringify(sample),
+      });
+      assert.equal(response.status, 200);
+      const data = await response.json();
+      assert.equal(data.source, "basic");
+      assert.match(data.summary, /不是 AI/);
+      assert.equal(upstreamCalled, false);
+    },
+  );
+});
