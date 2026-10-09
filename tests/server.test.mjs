@@ -342,3 +342,61 @@ test("X-Kaikou-Require-AI: 0 forces basicFeedback even when AI keys are configur
     },
   );
 });
+
+test("X-Kaikou-Require-AI: 0 returns basicFeedback when refreshConfig fails", async () => {
+  let upstreamCalled = false;
+  await serve(
+    {
+      env: {
+        AI_API_KEY: "test-key",
+        AI_BASE_URL: "https://provider.example/v1",
+        AI_MODEL: "model",
+      },
+      refreshConfig: () => {
+        throw new Error("unreadable encrypted configuration");
+      },
+      fetcher: async () => {
+        upstreamCalled = true;
+        return Response.json({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  summary: "不应走到 AI。",
+                  dimensions: [{ title: "结构", text: "不应出现。" }],
+                  improvements: ["不应出现。"],
+                  rewrite: "不应出现。",
+                }),
+              },
+            },
+          ],
+        });
+      },
+    },
+    async (base) => {
+      const bad = await fetch(`${base}/api/analyze`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Kaikou-Require-AI": "0",
+        },
+        body: JSON.stringify({ ...sample, transcript: " " }),
+      });
+      assert.equal(bad.status, 400);
+
+      const response = await fetch(`${base}/api/analyze`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Kaikou-Require-AI": "0",
+        },
+        body: JSON.stringify(sample),
+      });
+      assert.equal(response.status, 200);
+      const data = await response.json();
+      assert.equal(data.source, "basic");
+      assert.match(data.summary, /不是 AI/);
+      assert.equal(upstreamCalled, false);
+    },
+  );
+});

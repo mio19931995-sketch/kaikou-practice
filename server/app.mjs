@@ -33,7 +33,9 @@ export function createApp({
     next();
   });
   app.use("/api", express.json({ limit: "64kb" }));
-  app.use("/api", (_req, res, next) => {
+  app.use("/api", (req, res, next) => {
+    // 「查看基础反馈」不依赖 AI 配置：跳过 refreshConfig，校验仍在 analyze 里做。
+    if (req.get("X-Kaikou-Require-AI") === "0") return next();
     try {
       refreshConfig?.();
       next();
