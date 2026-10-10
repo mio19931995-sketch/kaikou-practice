@@ -2,7 +2,7 @@ import { AIRecovery } from "./AIRecovery";
 import { FeedbackReview, AnalysisProgress } from "./PracticeLoop";
 import { RuleSelector } from "./RuleSelector";
 import type { RuleProfile } from "./types";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { analyze, transcribe } from "./api";
 import { ErrorNote, setNavigationGuard } from "./components";
 import { saveSession } from "./storage";
@@ -28,10 +28,11 @@ export function SavedPractice({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const active = useRef(true);
+  const operationPending = useRef(false);
   const dirty =
     text !== session.transcript ||
     ruleProfile !== (session.ruleProfile || "auto");
-  useEffect(() => {
+  useLayoutEffect(() => {
     active.current = true;
     return () => {
       active.current = false;
@@ -56,7 +57,7 @@ export function SavedPractice({
     action: "transcribe" | "analyze" | "save",
     requireAI = true,
   ) {
-    if (working) return;
+    if (!active.current || working || operationPending.current) return;
     if (action === "analyze" && text.trim().length < 5) {
       setError("请先转写录音或填写至少 5 个字，再生成点评。");
       document.getElementById("saved-transcript")?.focus();
@@ -68,6 +69,7 @@ export function SavedPractice({
       !window.confirm("重新转写会替换当前文字，继续吗？")
     )
       return;
+    operationPending.current = true;
     setError("");
     setNotice("");
     onBusy(true);
@@ -95,7 +97,9 @@ export function SavedPractice({
               : session.previousAttempt,
           feedback: undefined,
         });
+        if (!active.current) return;
         await refresh();
+        if (!active.current) return;
         setNotice("转写文字已保存，可以直接生成点评。");
       } else {
         const updated = {
@@ -110,7 +114,9 @@ export function SavedPractice({
         };
         if (action === "analyze") {
           await saveSession(updated);
+          if (!active.current) return;
           await refresh();
+          if (!active.current) return;
         }
         const report =
           action === "analyze"
@@ -118,7 +124,9 @@ export function SavedPractice({
             : updated.feedback;
         if (!active.current) return;
         await saveSession({ ...updated, feedback: report });
+        if (!active.current) return;
         await refresh();
+        if (!active.current) return;
         setNotice(
           action === "analyze" ? "点评已保存到这条练习记录。" : "文字已保存。",
         );
@@ -126,6 +134,7 @@ export function SavedPractice({
     } catch (e) {
       if (active.current) setError((e as Error).message);
     } finally {
+      operationPending.current = false;
       if (active.current) {
         setWorking("");
         onBusy(false);
@@ -149,6 +158,7 @@ export function SavedPractice({
         />
         {!status.ai && (
           <AIRecovery
+            key={JSON.stringify([session.id, text, ruleProfile])}
             disabled={Boolean(working)}
             checkLabel="检查 AI 连接"
             requested={aiCheckRequest}

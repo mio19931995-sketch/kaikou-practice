@@ -297,3 +297,176 @@ test("explicit AI request never silently downgrades to basic feedback", async ()
   assert.equal(response.status,503); const result=await response.json(); assert.match(result.error,/不会改用基础反馈/); assert.equal(result.source,undefined);
  });
 });
+
+test("X-Kaikou-Require-AI: 0 forces basicFeedback even when AI keys are configured", async () => {
+  let upstreamCalled = false;
+  await serve(
+    {
+      env: {
+        AI_API_KEY: "test-key",
+        AI_BASE_URL: "https://provider.example/v1",
+        AI_MODEL: "model",
+      },
+      fetcher: async () => {
+        upstreamCalled = true;
+        return Response.json({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  summary: "不应走到 AI。",
+                  dimensions: [{ title: "结构", text: "不应出现。" }],
+                  improvements: ["不应出现。"],
+                  rewrite: "不应出现。",
+                }),
+              },
+            },
+          ],
+        });
+      },
+    },
+    async (base) => {
+      const response = await fetch(`${base}/api/analyze`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Kaikou-Require-AI": "0",
+        },
+        body: JSON.stringify(sample),
+      });
+      assert.equal(response.status, 200);
+      const data = await response.json();
+      assert.equal(data.source, "basic");
+      assert.match(data.summary, /不是 AI/);
+      assert.equal(upstreamCalled, false);
+    },
+  );
+});
+
+test("X-Kaikou-Require-AI: 0 returns basicFeedback when refreshConfig fails", async () => {
+  let upstreamCalled = false;
+  await serve(
+    {
+      env: {
+        AI_API_KEY: "test-key",
+        AI_BASE_URL: "https://provider.example/v1",
+        AI_MODEL: "model",
+      },
+      refreshConfig: () => {
+        throw new Error("unreadable encrypted configuration");
+      },
+      fetcher: async () => {
+        upstreamCalled = true;
+        return Response.json({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  summary: "不应走到 AI。",
+                  dimensions: [{ title: "结构", text: "不应出现。" }],
+                  improvements: ["不应出现。"],
+                  rewrite: "不应出现。",
+                }),
+              },
+            },
+          ],
+        });
+      },
+    },
+    async (base) => {
+      const bad = await fetch(`${base}/api/analyze`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Kaikou-Require-AI": "0",
+        },
+        body: JSON.stringify({ ...sample, transcript: " " }),
+      });
+      assert.equal(bad.status, 400);
+
+      const response = await fetch(`${base}/api/analyze`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Kaikou-Require-AI": "0",
+        },
+        body: JSON.stringify(sample),
+      });
+      assert.equal(response.status, 200);
+      const data = await response.json();
+      assert.equal(data.source, "basic");
+      assert.match(data.summary, /不是 AI/);
+      assert.equal(upstreamCalled, false);
+    },
+  );
+});
+
+test("refreshConfig exemption is only POST /analyze with header 0; status, transcribe, and other methods still 503", async () => {
+  let asrUpstreamCalled = false;
+  let refreshCalls = 0;
+  await serve(
+    {
+      env: {
+        AI_API_KEY: "stale-key",
+        AI_BASE_URL: "https://provider.example/v1",
+        AI_MODEL: "stale-model",
+        ASR_API_KEY: "asr-key",
+        ASR_BASE_URL: "https://asr.example/v1",
+        ASR_MODEL: "asr",
+      },
+      refreshConfig: () => {
+        refreshCalls += 1;
+        throw new Error("unreadable encrypted configuration");
+      },
+      fetcher: async () => {
+        asrUpstreamCalled = true;
+        return Response.json({ text: "不应调用上游。" });
+      },
+    },
+    async (base) => {
+      const statusRes = await fetch(`${base}/api/status`, {
+        headers: { "X-Kaikou-Require-AI": "0" },
+      });
+      assert.equal(statusRes.status, 503);
+      const statusBody = await statusRes.json();
+      assert.match(statusBody.error, /AI 配置暂时无法读取/);
+      assert.equal(statusBody.ai, undefined);
+
+      const form = new FormData();
+      form.append(
+        "audio",
+        new Blob(["RIFFtest"], { type: "audio/wav" }),
+        "test.wav",
+      );
+      const transcribeRes = await fetch(`${base}/api/transcribe`, {
+        method: "POST",
+        headers: { "X-Kaikou-Require-AI": "0" },
+        body: form,
+      });
+      assert.equal(transcribeRes.status, 503);
+      assert.equal(asrUpstreamCalled, false);
+      assert.match((await transcribeRes.json()).error, /AI 配置暂时无法读取/);
+
+      const wrongMethod = await fetch(`${base}/api/analyze`, {
+        method: "GET",
+        headers: { "X-Kaikou-Require-AI": "0" },
+      });
+      assert.equal(wrongMethod.status, 503);
+
+      const headerOne = await fetch(`${base}/api/analyze`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Kaikou-Require-AI": "1",
+        },
+        body: JSON.stringify(sample),
+      });
+      assert.equal(headerOne.status, 503);
+
+      const missingHeader = await post(base, sample);
+      assert.equal(missingHeader.status, 503);
+
+      assert.ok(refreshCalls >= 4);
+    },
+  );
+});

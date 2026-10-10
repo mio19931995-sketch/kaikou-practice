@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getStatus } from "./api";
 import { ServiceSettings } from "./ServiceSettings";
 
@@ -17,9 +17,26 @@ export function AIRecovery({
   const [opened, setOpened] = useState(false);
   const [message, setMessage] = useState("");
   const previousRequest = useRef(requested);
+  const active = useRef(false);
+  const checkId = useRef(0);
+  useLayoutEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+      checkId.current++;
+    };
+  }, []);
+  useLayoutEffect(() => {
+    // A newer intent or another action taking ownership supersedes this check.
+    checkId.current++;
+    setChecking(false);
+  }, [disabled, requested]);
   async function check(start = true) {
+    if (!active.current || disabled) return;
+    const id = ++checkId.current;
     setChecking(true);
     const status = await getStatus();
+    if (!active.current || id !== checkId.current) return;
     setChecking(false);
     window.dispatchEvent(new Event("focus"));
     if (status.ai) {

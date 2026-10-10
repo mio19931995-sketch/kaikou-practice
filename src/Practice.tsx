@@ -3,7 +3,7 @@ import { FeedbackReview, AnalysisProgress } from "./PracticeLoop";
 import "./practice-redesign.css";
 import { RuleSelector } from "./RuleSelector";
 import type { RuleProfile } from "./types";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   ArrowClockwise,
@@ -135,6 +135,7 @@ export function Practice({
   const recorder = useRecorder(targetDuration);
   const autoTranscribed = useRef(false);
   const active = useRef(true);
+  const operationPending = useRef(false);
   const question =
     retrySession?.topic ||
     (mode === "retell"
@@ -169,7 +170,7 @@ export function Practice({
       window.removeEventListener("beforeunload", beforeUnload);
     };
   }, [view, text, draft, recorder.blob, saved, working]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     active.current = true;
     return () => {
       active.current = false;
@@ -284,12 +285,14 @@ export function Practice({
     };
   }
   async function persist(report?: Feedback) {
+    if (!active.current) return;
     await saveSession(session(report));
+    if (!active.current) return;
     setSaved(true);
     await onSaved();
   }
   async function submit(requireAI: boolean) {
-    if (working) return;
+    if (!active.current || working || operationPending.current) return;
     if (text.trim().length < 5) {
       setError(
         recorder.blob
@@ -299,12 +302,14 @@ export function Practice({
       document.getElementById("transcript")?.focus();
       return;
     }
+    operationPending.current = true;
     const startedAt = Date.now();
     setAnalysisSeconds(undefined);
     setWorking(requireAI ? "正在阅读你的表达，生成点评…" : "正在整理本次练习…");
     setError("");
     try {
       await persist();
+      if (!active.current) return;
       const result = await analyze(session(), requireAI);
       if (!active.current) return;
       setSaved(false);
@@ -314,11 +319,12 @@ export function Practice({
       try {
         await persist(result);
       } catch (e) {
-        setError((e as Error).message);
+        if (active.current) setError((e as Error).message);
       }
     } catch (e) {
       if (active.current) setError((e as Error).message);
     } finally {
+      operationPending.current = false;
       if (active.current) {
         setWorking("");
         setAnalysisSeconds(Math.round((Date.now() - startedAt) / 1000));
@@ -326,19 +332,25 @@ export function Practice({
     }
   }
   async function saveOnly() {
+    if (!active.current || working || operationPending.current) return;
+    operationPending.current = true;
     setWorking("正在保存…");
     setError("");
     try {
       await persist(feedback);
+      if (!active.current) return;
       setNavigationGuard(undefined);
       go("/history");
     } catch (e) {
-      setError((e as Error).message);
+      if (active.current) setError((e as Error).message);
     } finally {
+      operationPending.current = false;
       if (active.current) setWorking("");
     }
   }
   async function cloudTranscribe(blob: Blob) {
+    if (!active.current || working || operationPending.current) return;
+    operationPending.current = true;
     setTranscriptionState("working");
     setWorking(
       status.asrMode === "local"
@@ -361,6 +373,7 @@ export function Practice({
         setTranscriptionState("error");
       }
     } finally {
+      operationPending.current = false;
       if (active.current) setWorking("");
     }
   }
@@ -1007,6 +1020,7 @@ export function Practice({
               </div>
               {!status.ai && (
                 <AIRecovery
+                  key={JSON.stringify([sessionId, text, ruleProfile])}
                   disabled={Boolean(working)}
                   checkLabel="检查 AI 连接"
                   requested={aiCheckRequest}
