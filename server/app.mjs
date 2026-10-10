@@ -33,7 +33,15 @@ export function createApp({
     next();
   });
   app.use("/api", express.json({ limit: "64kb" }));
-  app.use("/api", (_req, res, next) => {
+  app.use("/api", (req, res, next) => {
+    // 「查看基础反馈」仅限 POST /api/analyze + X-Kaikou-Require-AI: 0：
+    // 跳过 refreshConfig；status / transcribe / 其他方法仍须刷新配置。
+    if (
+      req.method === "POST" &&
+      req.path === "/analyze" &&
+      req.get("X-Kaikou-Require-AI") === "0"
+    )
+      return next();
     try {
       refreshConfig?.();
       next();
@@ -77,6 +85,10 @@ export function createApp({
             error:
               "AI 服务尚未配置完整，请连接模型后重试。文字和录音已保留，本次不会改用基础反馈。",
           });
+      return res.json(basicFeedback(input));
+    }
+    // 「查看基础反馈」：即使已配置 AI key，也按本地 basicFeedback 返回，不打上游。
+    if (req.get("X-Kaikou-Require-AI") === "0") {
       return res.json(basicFeedback(input));
     }
     try {
