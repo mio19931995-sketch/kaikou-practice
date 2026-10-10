@@ -400,3 +400,73 @@ test("X-Kaikou-Require-AI: 0 returns basicFeedback when refreshConfig fails", as
     },
   );
 });
+
+test("refreshConfig exemption is only POST /analyze with header 0; status, transcribe, and other methods still 503", async () => {
+  let asrUpstreamCalled = false;
+  let refreshCalls = 0;
+  await serve(
+    {
+      env: {
+        AI_API_KEY: "stale-key",
+        AI_BASE_URL: "https://provider.example/v1",
+        AI_MODEL: "stale-model",
+        ASR_API_KEY: "asr-key",
+        ASR_BASE_URL: "https://asr.example/v1",
+        ASR_MODEL: "asr",
+      },
+      refreshConfig: () => {
+        refreshCalls += 1;
+        throw new Error("unreadable encrypted configuration");
+      },
+      fetcher: async () => {
+        asrUpstreamCalled = true;
+        return Response.json({ text: "不应调用上游。" });
+      },
+    },
+    async (base) => {
+      const statusRes = await fetch(`${base}/api/status`, {
+        headers: { "X-Kaikou-Require-AI": "0" },
+      });
+      assert.equal(statusRes.status, 503);
+      const statusBody = await statusRes.json();
+      assert.match(statusBody.error, /AI 配置暂时无法读取/);
+      assert.equal(statusBody.ai, undefined);
+
+      const form = new FormData();
+      form.append(
+        "audio",
+        new Blob(["RIFFtest"], { type: "audio/wav" }),
+        "test.wav",
+      );
+      const transcribeRes = await fetch(`${base}/api/transcribe`, {
+        method: "POST",
+        headers: { "X-Kaikou-Require-AI": "0" },
+        body: form,
+      });
+      assert.equal(transcribeRes.status, 503);
+      assert.equal(asrUpstreamCalled, false);
+      assert.match((await transcribeRes.json()).error, /AI 配置暂时无法读取/);
+
+      const wrongMethod = await fetch(`${base}/api/analyze`, {
+        method: "GET",
+        headers: { "X-Kaikou-Require-AI": "0" },
+      });
+      assert.equal(wrongMethod.status, 503);
+
+      const headerOne = await fetch(`${base}/api/analyze`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Kaikou-Require-AI": "1",
+        },
+        body: JSON.stringify(sample),
+      });
+      assert.equal(headerOne.status, 503);
+
+      const missingHeader = await post(base, sample);
+      assert.equal(missingHeader.status, 503);
+
+      assert.ok(refreshCalls >= 4);
+    },
+  );
+});

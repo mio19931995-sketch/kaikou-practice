@@ -34,8 +34,14 @@ export function createApp({
   });
   app.use("/api", express.json({ limit: "64kb" }));
   app.use("/api", (req, res, next) => {
-    // 「查看基础反馈」不依赖 AI 配置：跳过 refreshConfig，校验仍在 analyze 里做。
-    if (req.get("X-Kaikou-Require-AI") === "0") return next();
+    // 「查看基础反馈」仅限 POST /api/analyze + X-Kaikou-Require-AI: 0：
+    // 跳过 refreshConfig；status / transcribe / 其他方法仍须刷新配置。
+    if (
+      req.method === "POST" &&
+      req.path === "/analyze" &&
+      req.get("X-Kaikou-Require-AI") === "0"
+    )
+      return next();
     try {
       refreshConfig?.();
       next();
